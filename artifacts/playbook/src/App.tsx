@@ -10,6 +10,10 @@ import Import from "@/pages/import";
 import GenerateEmail from "@/pages/generate-email";
 import GenerateScript from "@/pages/generate-script";
 import SuggestEdits from "@/pages/suggest-edits";
+import HubSpotCompanies from "@/pages/hubspot-companies";
+import HubSpotCompanyDetail from "@/pages/hubspot-company-detail";
+import HubSpotContacts from "@/pages/hubspot-contacts";
+import HubSpotContactDetail from "@/pages/hubspot-contact-detail";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient();
@@ -25,6 +29,10 @@ function Router() {
         <Route path="/generate-email" component={GenerateEmail} />
         <Route path="/generate-script" component={GenerateScript} />
         <Route path="/suggest-edits" component={SuggestEdits} />
+        <Route path="/hubspot/companies" component={HubSpotCompanies} />
+        <Route path="/hubspot/companies/:id" component={HubSpotCompanyDetail} />
+        <Route path="/hubspot/contacts" component={HubSpotContacts} />
+        <Route path="/hubspot/contacts/:id" component={HubSpotContactDetail} />
         <Route component={NotFound} />
       </Switch>
     </Layout>

@@ -91,6 +91,36 @@ Generated Zod schemas from the OpenAPI spec (e.g. `HealthCheckResponse`). Used b
 
 Generated React Query hooks and fetch client from the OpenAPI spec (e.g. `useHealthCheck`, `healthCheck`).
 
+### `artifacts/playbook` (`@workspace/playbook`)
+
+React + Vite frontend. Pages in `src/pages/`, shared components in `src/components/`.
+
+Key pages:
+- `/` — Dashboard with stats, recent activity, quick actions
+- `/playbooks`, `/playbooks/:id` — Playbook CRUD and detail
+- `/import` — Import & analyze emails
+- `/generate-email`, `/generate-script`, `/suggest-edits` — AI generation tools
+- `/hubspot/companies`, `/hubspot/companies/:id` — HubSpot accounts list + detail (email history, notes, AI account summary)
+- `/hubspot/contacts`, `/hubspot/contacts/:id` — HubSpot contacts list + detail (email history, AI contact summary)
+
+Key components:
+- `OutputBox` — Renders AI-generated content with markdown-like formatting (headings, bullets, sections), copy button
+- `Layout` — Sidebar with 3 nav groups: OVERVIEW, GENERATORS, HUBSPOT CRM
+- `api-base.ts` — `getApiBaseUrl()` utility for fetching from the API server
+
+HubSpot routes in API server (`/api/hubspot/*`):
+- `GET /api/hubspot/companies` — list/search companies
+- `GET /api/hubspot/companies/:id` — company detail with contacts
+- `GET /api/hubspot/companies/:id/emails` — email history
+- `GET /api/hubspot/companies/:id/notes` — notes
+- `POST /api/hubspot/companies/:id/summarize` — AI account summary
+- `GET /api/hubspot/contacts` — list/search contacts
+- `GET /api/hubspot/contacts/:id` — contact detail with companies
+- `GET /api/hubspot/contacts/:id/emails` — email history
+- `POST /api/hubspot/contacts/:id/summarize` — AI contact summary
+
+HubSpot uses `@replit/connectors-sdk` with `ReplitConnectors().proxy("hubspot", ...)` pattern. Never cache the connectors instance.
+
 ### `scripts` (`@workspace/scripts`)
 
 Utility scripts package. Each script is a `.ts` file in `src/` with a corresponding npm script in `package.json`. Run scripts via `pnpm --filter @workspace/scripts run <script>`. Scripts can import any workspace package (e.g., `@workspace/db`) by adding it as a dependency in `scripts/package.json`.
