@@ -6,7 +6,8 @@
       "Bash(curl:*)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(find /home/runner/workspace -type f \\\\\\( -name \"*.md\" -o -name \"*.txt\" \\\\\\) -exec grep -l \"hubspot\\\\|connector\\\\|HUBSPOT\" {} \\\\;)"
+      "Bash(find /home/runner/workspace -type f \\\\\\( -name \"*.md\" -o -name \"*.txt\" \\\\\\) -exec grep -l \"hubspot\\\\|connector\\\\|HUBSPOT\" {} \\\\;)",
+      "Bash(ls /home/runner/workspace/*.json /home/runner/workspace/*.ts)"
     ]
   }
 }

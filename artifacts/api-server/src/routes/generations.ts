@@ -172,7 +172,16 @@ ${FORMATTING_RULES}`,
 
 router.post("/script-builder", async (req, res) => {
   try {
-    const { name, company, role, notes, context, playbookId } = req.body;
+    const name = req.body.name || "";
+    const company = req.body.company || "";
+    const role = req.body.role || "";
+    const context = req.body.context || "";
+    const playbookId = req.body.playbookId || null;
+    const rawNotes: unknown = req.body.notes;
+    const notesList: string[] = Array.isArray(rawNotes)
+      ? rawNotes.filter((n): n is string => typeof n === "string" && n.trim().length > 0)
+      : [];
+
     if (!name && !company) {
       res.status(400).json({ error: "Either name or company is required" });
       return;
@@ -187,8 +196,8 @@ router.post("/script-builder", async (req, res) => {
       context ? `Additional Context: ${context}` : null,
     ].filter(Boolean).join("\n");
 
-    const notesSection = notes && notes.length > 0
-      ? `\nEXISTING NOTES AND HISTORY:\n${notes.join("\n---\n")}`
+    const notesSection = notesList.length > 0
+      ? `\nEXISTING NOTES AND HISTORY:\n${notesList.join("\n---\n")}`
       : "";
 
     const DEAL_STAGES = [

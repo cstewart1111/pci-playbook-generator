@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { OutputBox } from "@/components/output-box";
 import {
   Building2, Mail, FileText, Users, Globe, ChevronLeft,
-  Loader2, Sparkles, Calendar, ExternalLink, Pen, PhoneCall, Clock
+  Loader2, Sparkles, Calendar, ExternalLink, Pen, PhoneCall, Clock, Wand2
 } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { getApiBaseUrl } from "@/lib/api-base";
@@ -308,6 +308,24 @@ export default function HubSpotCompanyDetail() {
                   <span className="ml-1.5">Write Script</span>
                 </Button>
               </div>
+              <Button
+                size="sm"
+                variant="outline"
+                className="w-full border-primary/30 text-primary"
+                onClick={() => {
+                  const noteTexts = notes.map(n => n.properties.hs_note_body).filter(Boolean);
+                  const params = new URLSearchParams();
+                  params.set("type", "company");
+                  params.set("id", id!);
+                  params.set("name", company?.name ?? "");
+                  params.set("company", company?.name ?? "");
+                  if (noteTexts.length > 0) params.set("notes", JSON.stringify(noteTexts));
+                  navigate(`/script-builder?${params.toString()}`);
+                }}
+              >
+                <Wand2 className="w-3.5 h-3.5" />
+                <span className="ml-1.5">Build Script (5 Variations)</span>
+              </Button>
             </CardContent>
           </Card>
 

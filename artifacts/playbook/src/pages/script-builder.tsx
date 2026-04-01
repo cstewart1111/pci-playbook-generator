@@ -1,4 +1,5 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
+import { useSearch } from "wouter";
 import { useListPlaybooks } from "@workspace/api-client-react";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -85,6 +86,36 @@ export default function ScriptBuilder() {
   const [showNotes, setShowNotes] = useState(false);
 
   const apiBase = getApiBaseUrl();
+  const searchString = useSearch();
+
+  // Auto-load from query params (when navigating from company/contact detail)
+  useEffect(() => {
+    const params = new URLSearchParams(searchString);
+    const type = params.get("type");
+    const name = params.get("name");
+    const company = params.get("company");
+    const role = params.get("role");
+    const notesParam = params.get("notes");
+
+    if (!type && !name && !company) return;
+
+    if (type === "contact" || type === "company") {
+      setSourceMode("manual");
+      if (name) setManualName(name);
+      if (company) setManualCompany(company);
+      if (role) setManualRole(role);
+      if (notesParam) {
+        try {
+          const parsed = JSON.parse(notesParam);
+          if (Array.isArray(parsed)) {
+            setManualNotes(parsed.join("\n---\n"));
+          }
+        } catch {
+          // ignore parse errors
+        }
+      }
+    }
+  }, [searchString]);
 
   const searchHubSpot = useCallback(async () => {
     if (!searchQuery.trim()) return;
