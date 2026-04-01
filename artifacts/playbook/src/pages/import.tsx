@@ -6,6 +6,7 @@ import {
   getGetPlaybookQueryKey,
   getListPlaybooksQueryKey,
 } from "@workspace/api-client-react";
+import { parseSearch } from "@/lib/query-params";
 import { useQueryClient } from "@tanstack/react-query";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -24,20 +25,9 @@ import { useToast } from "@/hooks/use-toast";
 import { Plus, Trash2, Loader2, CheckCircle2 } from "lucide-react";
 import type { AnalysisResult } from "@workspace/api-client-react";
 
-function parseQueryString(search: string): Record<string, string> {
-  const params: Record<string, string> = {};
-  const q = search.startsWith("?") ? search.slice(1) : search;
-  q.split("&").forEach((part) => {
-    const [k, v] = part.split("=");
-    if (k) params[decodeURIComponent(k)] = decodeURIComponent(v ?? "");
-  });
-  return params;
-}
-
 export default function Import() {
   const search = useSearch();
-  const queryParams = parseQueryString(search);
-  const defaultPlaybook = queryParams.playbook ?? "";
+  const defaultPlaybook = parseSearch(search).get("playbook") ?? "";
 
   const [emails, setEmails] = useState<string[]>([""]);
   const [selectedPlaybook, setSelectedPlaybook] = useState<string>(defaultPlaybook);

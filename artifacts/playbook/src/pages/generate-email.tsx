@@ -30,16 +30,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
-
-function parseQueryString(search: string): Record<string, string> {
-  const params: Record<string, string> = {};
-  const q = search.startsWith("?") ? search.slice(1) : search;
-  q.split("&").forEach((part) => {
-    const [k, v] = part.split("=");
-    if (k) params[decodeURIComponent(k)] = decodeURIComponent(v ?? "");
-  });
-  return params;
-}
+import { parseSearch } from "@/lib/query-params";
 
 const schema = z.object({
   company: z.string().min(1, "Company is required"),
@@ -54,8 +45,7 @@ type FormValues = z.infer<typeof schema>;
 
 export default function GenerateEmail() {
   const search = useSearch();
-  const queryParams = parseQueryString(search);
-  const defaultPlaybook = queryParams.playbook ?? "";
+  const defaultPlaybook = parseSearch(search).get("playbook") ?? "";
 
   const [output, setOutput] = useState<string | null>(null);
   const { toast } = useToast();
