@@ -3,10 +3,11 @@ import { useParams, useLocation } from "wouter";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
 import { OutputBox } from "@/components/output-box";
 import {
   Building2, Mail, FileText, Users, Globe, ChevronLeft,
-  Loader2, Sparkles, Calendar, ExternalLink
+  Loader2, Sparkles, Calendar, ExternalLink, Pen
 } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { getApiBaseUrl } from "@/lib/api-base";
@@ -17,6 +18,16 @@ import { useListPlaybooks } from "@workspace/api-client-react";
 interface ContactProp { firstname?: string; lastname?: string; jobtitle?: string; email?: string }
 interface EmailProp { hs_email_subject?: string; hs_email_text?: string; hs_email_direction?: string; hs_timestamp?: string }
 interface NoteProp { hs_note_body?: string; hs_timestamp?: string }
+
+const GOALS = [
+  { value: "zoom", label: "Set a Zoom meeting" },
+  { value: "onsite", label: "Set an onsite visit" },
+  { value: "discovery", label: "Schedule discovery call" },
+  { value: "demo", label: "Schedule a demo" },
+  { value: "followup", label: "Follow-up on previous contact" },
+  { value: "reengage", label: "Re-engage cold prospect" },
+  { value: "resource", label: "Share a resource or insight" },
+];
 
 async function fetchCompanyDetail(id: string) {
   const base = getApiBaseUrl();
@@ -59,9 +70,15 @@ export default function HubSpotCompanyDetail() {
   const { id } = useParams<{ id: string }>();
   const [, navigate] = useLocation();
   const { toast } = useToast();
+
   const [summary, setSummary] = useState<string | null>(null);
-  const [selectedPlaybook, setSelectedPlaybook] = useState("none");
+  const [generatedEmail, setGeneratedEmail] = useState<string | null>(null);
+  const [generatedScript, setGeneratedScript] = useState<string | null>(null);
+  const [summaryPlaybook, setSummaryPlaybook] = useState("none");
+  const [outreachGoal, setOutreachGoal] = useState("zoom");
+  const [outreachContext, setOutreachContext] = useState("");
   const [expandedEmail, setExpandedEmail] = useState<string | null>(null);
+  const [generatingType, setGeneratingType] = useState<"email" | "script" | null>(null);
 
   const { data: playbooks } = useListPlaybooks();
 
@@ -94,7 +111,7 @@ export default function HubSpotCompanyDetail() {
           contacts: detail?.contacts,
           emails: emailsData?.results ?? [],
           notes: notesData?.results ?? [],
-          playbookContext: selectedPlaybook !== "none" ? `Playbook ID: ${selectedPlaybook}` : undefined,
+          playbookContext: summaryPlaybook !== "none" ? `Playbook ID: ${summaryPlaybook}` : undefined,
         }),
       });
       if (!res.ok) throw new Error("Failed to generate summary");
@@ -102,6 +119,30 @@ export default function HubSpotCompanyDetail() {
     },
     onSuccess: (data) => setSummary(data.summary),
     onError: () => toast({ title: "Summary failed", description: "Please try again.", variant: "destructive" }),
+  });
+
+  const generate = useMutation({
+    mutationFn: async (type: "email" | "script") => {
+      setGeneratingType(type);
+      const base = getApiBaseUrl();
+      const res = await fetch(`${base}/hubspot/companies/${id}/generate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ goal: outreachGoal, context: outreachContext, type }),
+      });
+      if (!res.ok) throw new Error("Generation failed");
+      const data = await res.json();
+      return { ...data, type };
+    },
+    onSuccess: (data) => {
+      if (data.type === "email") setGeneratedEmail(data.output);
+      else setGeneratedScript(data.output);
+      setGeneratingType(null);
+    },
+    onError: () => {
+      setGeneratingType(null);
+      toast({ title: "Generation failed", description: "Please try again.", variant: "destructive" });
+    },
   });
 
   const company = detail?.company?.properties;
@@ -154,14 +195,8 @@ export default function HubSpotCompanyDetail() {
               {company?.domain && (
                 <div className="flex items-center gap-2 text-muted-foreground">
                   <Globe className="w-3.5 h-3.5" />
-                  <a
-                    href={`https://${company.domain}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="hover:text-primary flex items-center gap-1"
-                  >
-                    {company.domain}
-                    <ExternalLink className="w-3 h-3" />
+                  <a href={`https://${company.domain}`} target="_blank" rel="noreferrer" className="hover:text-primary flex items-center gap-1">
+                    {company.domain} <ExternalLink className="w-3 h-3" />
                   </a>
                 </div>
               )}
@@ -172,15 +207,71 @@ export default function HubSpotCompanyDetail() {
                 </div>
               )}
               {company?.annualrevenue && (
-                <div className="text-muted-foreground">
-                  Revenue: ${Number(company.annualrevenue).toLocaleString()}
-                </div>
+                <div className="text-muted-foreground">Revenue: ${Number(company.annualrevenue).toLocaleString()}</div>
               )}
               {company?.description && (
                 <p className="text-muted-foreground text-xs mt-2 border-t border-border pt-2 leading-relaxed">
                   {company.description.slice(0, 200)}{company.description.length > 200 ? "..." : ""}
                 </p>
               )}
+            </CardContent>
+          </Card>
+
+          <Card className="border-primary/20 bg-primary/2">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Pen className="w-4 h-4 text-primary" />
+                Generate Outreach
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div>
+                <label className="text-xs text-muted-foreground mb-1.5 block">What is your goal?</label>
+                <Select value={outreachGoal} onValueChange={setOutreachGoal}>
+                  <SelectTrigger data-testid="select-outreach-goal" className="h-8 text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {GOALS.map(g => (
+                      <SelectItem key={g.value} value={g.value}>{g.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground mb-1.5 block">Additional context <span className="opacity-60">(optional)</span></label>
+                <Textarea
+                  data-testid="input-outreach-context"
+                  placeholder="Add any specific context, talking points, or tone guidance..."
+                  rows={4}
+                  value={outreachContext}
+                  onChange={e => setOutreachContext(e.target.value)}
+                  className="text-sm resize-none"
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">Activity from the last 90 days is pulled automatically.</p>
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  size="sm"
+                  variant="default"
+                  data-testid="button-generate-email"
+                  onClick={() => generate.mutate("email")}
+                  disabled={generate.isPending}
+                >
+                  {generatingType === "email" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Mail className="w-3.5 h-3.5" />}
+                  <span className="ml-1.5">Write Email</span>
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  data-testid="button-generate-script"
+                  onClick={() => generate.mutate("script")}
+                  disabled={generate.isPending}
+                >
+                  {generatingType === "script" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileText className="w-3.5 h-3.5" />}
+                  <span className="ml-1.5">Write Script</span>
+                </Button>
+              </div>
             </CardContent>
           </Card>
 
@@ -192,9 +283,7 @@ export default function HubSpotCompanyDetail() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              {contacts.length === 0 && (
-                <p className="text-xs text-muted-foreground">No contacts linked</p>
-              )}
+              {contacts.length === 0 && <p className="text-xs text-muted-foreground">No contacts linked</p>}
               {contacts.map((c) => (
                 <div
                   key={c.id}
@@ -220,13 +309,13 @@ export default function HubSpotCompanyDetail() {
             <CardHeader className="pb-3">
               <CardTitle className="text-sm flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-primary" />
-                AI Account Summary
+                Account Intelligence
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <div>
                 <label className="text-xs text-muted-foreground mb-1.5 block">Playbook (optional)</label>
-                <Select value={selectedPlaybook} onValueChange={setSelectedPlaybook}>
+                <Select value={summaryPlaybook} onValueChange={setSummaryPlaybook}>
                   <SelectTrigger data-testid="select-summary-playbook" className="h-8 text-xs">
                     <SelectValue placeholder="No playbook" />
                   </SelectTrigger>
@@ -241,14 +330,15 @@ export default function HubSpotCompanyDetail() {
               <Button
                 className="w-full"
                 size="sm"
+                variant="outline"
                 data-testid="button-generate-account-summary"
                 onClick={() => summarize.mutate()}
-                disabled={summarize.isPending || (loadingEmails || loadingNotes)}
+                disabled={summarize.isPending}
               >
                 {summarize.isPending ? (
-                  <><Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" />Generating...</>
+                  <><Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" />Analyzing...</>
                 ) : (
-                  <><Sparkles className="w-3.5 h-3.5 mr-2" />Generate Summary</>
+                  <><Sparkles className="w-3.5 h-3.5 mr-2" />Analyze Account</>
                 )}
               </Button>
             </CardContent>
@@ -256,11 +346,14 @@ export default function HubSpotCompanyDetail() {
         </div>
 
         <div className="lg:col-span-2 space-y-4">
+          {generatedEmail && (
+            <OutputBox content={generatedEmail} label="Generated Email" />
+          )}
+          {generatedScript && (
+            <OutputBox content={generatedScript} label="Call Script" />
+          )}
           {summary && (
-            <OutputBox
-              content={summary}
-              label="Account Summary"
-            />
+            <OutputBox content={summary} label="Account Intelligence" />
           )}
 
           <Card>
@@ -278,11 +371,7 @@ export default function HubSpotCompanyDetail() {
               )}
               <div className="space-y-2">
                 {emails.map((email) => (
-                  <div
-                    key={email.id}
-                    className="border border-border rounded-md overflow-hidden"
-                    data-testid={`email-row-${email.id}`}
-                  >
+                  <div key={email.id} className="border border-border rounded-md overflow-hidden" data-testid={`email-row-${email.id}`}>
                     <button
                       className="w-full flex items-center justify-between px-3 py-2.5 text-left hover:bg-accent/20 transition-colors"
                       onClick={() => setExpandedEmail(expandedEmail === email.id ? null : email.id)}
@@ -295,9 +384,7 @@ export default function HubSpotCompanyDetail() {
                         }`}>
                           {directionLabel(email.properties.hs_email_direction)}
                         </span>
-                        <span className="text-sm font-medium truncate">
-                          {email.properties.hs_email_subject ?? "(no subject)"}
-                        </span>
+                        <span className="text-sm font-medium truncate">{email.properties.hs_email_subject ?? "(no subject)"}</span>
                       </div>
                       <div className="flex items-center gap-1 text-xs text-muted-foreground shrink-0 ml-2">
                         <Calendar className="w-3 h-3" />

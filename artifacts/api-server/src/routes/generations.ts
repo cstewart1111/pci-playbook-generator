@@ -11,18 +11,28 @@ import { eq, desc } from "drizzle-orm";
 
 const router: IRouter = Router();
 
+const FORMATTING_RULES = `
+FORMATTING RULES - follow these exactly:
+- Write in plain text only. No asterisks, pound signs, hashtags, or any markdown.
+- Never use em dashes or long dashes. Use commas, periods, or a short hyphen where needed.
+- Do not use bullet points with hyphens or asterisks. Write in full sentences or numbered points.
+- Do not invent or assume any facts not provided to you.
+- Write professionally, conversationally, and concisely.
+- Output should paste cleanly into Outlook or HubSpot with no cleanup needed.
+`;
+
 async function getPlaybookContext(playbookId?: number | null): Promise<string> {
   if (!playbookId) return "";
   const [playbook] = await db.select().from(playbooks).where(eq(playbooks.id, playbookId));
   if (!playbook) return "";
   const patternRows = await db.select().from(patterns).where(eq(patterns.playbookId, playbookId));
 
-  let context = `\n\nPLAYBOOK: "${playbook.name}"\n`;
+  let context = `\nPLAYBOOK: "${playbook.name}"\n`;
   if (playbook.principles.length > 0) {
-    context += `\nPrinciples:\n${playbook.principles.map(p => `- ${p}`).join("\n")}`;
+    context += `\nPrinciples:\n${playbook.principles.join("\n")}`;
   }
   if (patternRows.length > 0) {
-    context += `\n\nPatterns:\n${patternRows.map(p => `- [${p.type}] ${p.text}\n  Examples: ${p.examples.slice(0, 2).join("; ")}`).join("\n")}`;
+    context += `\n\nPatterns:\n${patternRows.map(p => `[${p.type}] ${p.text} - Examples: ${p.examples.slice(0, 2).join("; ")}`).join("\n")}`;
   }
   return context;
 }
@@ -46,29 +56,34 @@ router.post("/email", async (req, res) => {
     const body = GenerateEmailBody.parse(req.body);
     const playbookContext = await getPlaybookContext(body.playbookId);
 
+    const details = [
+      body.company ? `Company: ${body.company}` : null,
+      body.role ? `Role: ${body.role}` : null,
+      body.problemHypothesis ? `Problem Hypothesis: ${body.problemHypothesis}` : null,
+      body.recentHook ? `Recent Hook: ${body.recentHook}` : null,
+      body.context ? `Context: ${body.context}` : null,
+    ].filter(Boolean).join("\n");
+
     const message = await anthropic.messages.create({
       model: "claude-sonnet-4-6",
       max_tokens: 8192,
       messages: [
         {
           role: "user",
-          content: `You are an expert consultative enterprise sales writer. Generate a highly personalized, research-based cold sales email.
-${playbookContext}
+          content: `You are an expert consultative enterprise sales writer. Generate a highly personalized, compelling sales email.
+${playbookContext ? `\n${playbookContext}` : ""}
 
 Target Details:
-- Company: ${body.company}
-- Role: ${body.role}
-- Problem Hypothesis: ${body.problemHypothesis}
-- Recent Hook/Trigger: ${body.recentHook}
-- Context: ${body.context}
+${details}
 
-Write a concise, compelling sales email (150-250 words). Use the playbook patterns if provided. The email should:
-1. Open with a specific, research-based observation (not generic flattery)
-2. Connect it to a relevant business pain
-3. Position your value precisely
-4. Have a low-friction CTA
+Write a concise, compelling sales email (150 to 250 words). Use the playbook patterns if provided. The email should:
+1. Open with a specific, relevant observation based only on what is provided
+2. Connect it to a business pain or opportunity
+3. Position value precisely and briefly
+4. End with a single, low-friction call to action
 
-Return only the email text, no subject line wrapper or explanation.`,
+Return only the email body text. No subject line, no explanation, no preamble.
+${FORMATTING_RULES}`,
         },
       ],
     });
@@ -80,8 +95,8 @@ Return only the email text, no subject line wrapper or explanation.`,
       .insert(generations)
       .values({
         type: "email",
-        company: body.company,
-        role: body.role,
+        company: body.company || null,
+        role: body.role || null,
         output: content.text,
         playbookId: body.playbookId ?? null,
       })
@@ -105,20 +120,31 @@ router.post("/script", async (req, res) => {
       messages: [
         {
           role: "user",
-          content: `You are an expert in consultative enterprise sales call coaching. Generate a structured call script.
-${playbookContext}
+          content: `You are an expert consultative enterprise sales coach. Generate a structured call script.
+${playbookContext ? `\n${playbookContext}` : ""}
 
 Objective: ${body.objective}
 Context: ${body.context}
 
-Generate a structured call script with these sections (use ALL of these):
-OPENING: (30-second opener)
-DISCOVERY QUESTIONS: (4-6 probing questions)
-CORE MESSAGE: (your value framing)
-OBJECTION HANDLES: (3-4 common objections with responses)
-CLOSING: (next step ask)
+Generate a structured call script with exactly these sections, labeled as shown:
 
-Be specific to the context provided. Return only the script, no preamble.`,
+OPENING:
+(A concise 30-second opener)
+
+DISCOVERY QUESTIONS:
+(4 to 6 specific probing questions, numbered)
+
+CORE MESSAGE:
+(Your value framing, 2 to 3 sentences)
+
+OBJECTION HANDLES:
+(3 to 4 common objections with responses, numbered)
+
+CLOSING:
+(The next step ask)
+
+Be specific to the context. Return only the script.
+${FORMATTING_RULES}`,
         },
       ],
     });
@@ -156,25 +182,27 @@ router.post("/suggest-edits", async (req, res) => {
         {
           role: "user",
           content: `You are an expert consultative sales coach. Review this draft email and provide structured feedback.
-${playbookContext}
+${playbookContext ? `\n${playbookContext}` : ""}
 
 DRAFT EMAIL:
 ${body.draftEmail}
 
-Provide feedback in this exact format:
+Provide feedback using exactly these section labels:
+
 STRENGTHS:
-- [what works well, be specific]
+(What works well, be specific)
 
 GAPS:
-- [what's missing or weak]
+(What is missing or weak)
 
 SPECIFIC IMPROVEMENTS:
-- [Actionable, line-by-line suggestions]
+(Actionable, line-by-line suggestions)
 
 REWRITE SUGGESTION:
-[Optionally provide a quick improved version of the opening line or CTA if significantly weak]
+(A brief improved version of the opening line or CTA, only if significantly weak)
 
-Return only the feedback, no preamble.`,
+Return only the feedback.
+${FORMATTING_RULES}`,
         },
       ],
     });

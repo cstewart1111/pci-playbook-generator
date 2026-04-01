@@ -9,55 +9,33 @@ interface OutputBoxProps {
   className?: string;
 }
 
-function formatContent(text: string) {
+function renderContent(text: string) {
   const lines = text.split("\n");
-  const elements: React.ReactNode[] = [];
+  const nodes: React.ReactNode[] = [];
   let key = 0;
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
+    const isSectionHeader = /^[A-Z][A-Z\s\/]+:$/.test(line.trim());
 
-    if (line.startsWith("## ")) {
-      elements.push(
-        <h2 key={key++} className="text-sm font-semibold text-foreground mt-4 mb-1 first:mt-0">
-          {line.slice(3)}
-        </h2>
-      );
-    } else if (line.startsWith("# ")) {
-      elements.push(
-        <h1 key={key++} className="text-base font-bold text-foreground mt-4 mb-1 first:mt-0">
-          {line.slice(2)}
-        </h1>
-      );
-    } else if (line.match(/^[A-Z][A-Z\s]+:$/)) {
-      elements.push(
-        <p key={key++} className="text-xs font-semibold text-primary uppercase tracking-wide mt-4 mb-1 first:mt-0">
+    if (isSectionHeader) {
+      nodes.push(
+        <p key={key++} className="text-xs font-bold text-primary uppercase tracking-widest mt-5 mb-1.5 first:mt-0">
           {line}
         </p>
       );
-    } else if (line.startsWith("- ") || line.startsWith("• ")) {
-      elements.push(
-        <div key={key++} className="flex gap-2 items-start pl-1">
-          <span className="text-primary mt-1 shrink-0 text-xs">•</span>
-          <span className="text-sm text-foreground leading-relaxed">{line.slice(2)}</span>
-        </div>
-      );
-    } else if (line === "" || line === "---") {
-      if (line === "---") {
-        elements.push(<hr key={key++} className="border-border my-3" />);
-      } else {
-        elements.push(<div key={key++} className="h-2" />);
-      }
+    } else if (line.trim() === "") {
+      nodes.push(<div key={key++} className="h-3" />);
     } else {
-      elements.push(
-        <p key={key++} className="text-sm text-foreground leading-relaxed">
+      nodes.push(
+        <p key={key++} className="text-[15px] leading-[1.75] text-foreground">
           {line}
         </p>
       );
     }
   }
 
-  return elements;
+  return nodes;
 }
 
 export function OutputBox({ content, label, className }: OutputBoxProps) {
@@ -91,9 +69,10 @@ export function OutputBox({ content, label, className }: OutputBoxProps) {
       </div>
       <div
         data-testid="text-output-content"
-        className="p-5 bg-card space-y-1"
+        className="p-6 bg-white dark:bg-card"
+        style={{ fontFamily: "'Segoe UI', system-ui, -apple-system, sans-serif" }}
       >
-        {formatContent(content)}
+        {renderContent(content)}
       </div>
     </div>
   );

@@ -33,11 +33,11 @@ import { Loader2 } from "lucide-react";
 import { parseSearch } from "@/lib/query-params";
 
 const schema = z.object({
-  company: z.string().min(1, "Company is required"),
-  role: z.string().min(1, "Role is required"),
-  problemHypothesis: z.string().min(1, "Problem hypothesis is required"),
-  recentHook: z.string().min(1, "Recent hook is required"),
-  context: z.string().min(1, "Context is required"),
+  company: z.string().optional(),
+  role: z.string().optional(),
+  problemHypothesis: z.string().optional(),
+  recentHook: z.string().optional(),
+  context: z.string().min(1, "Please provide at least some context to generate from"),
   playbookId: z.string().optional(),
 });
 
@@ -78,10 +78,10 @@ export default function GenerateEmail() {
     setOutput(null);
     generateEmail.mutate({
       data: {
-        company: values.company,
-        role: values.role,
-        problemHypothesis: values.problemHypothesis,
-        recentHook: values.recentHook,
+        company: values.company || "",
+        role: values.role || "",
+        problemHypothesis: values.problemHypothesis || "",
+        recentHook: values.recentHook || "",
         context: values.context,
         playbookId: (values.playbookId && values.playbookId !== "none") ? Number(values.playbookId) : null,
       },
@@ -106,7 +106,7 @@ export default function GenerateEmail() {
                     name="company"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Company Name</FormLabel>
+                        <FormLabel className="text-muted-foreground">Company Name <span className="text-xs">(optional)</span></FormLabel>
                         <FormControl>
                           <Input placeholder="e.g. Acme Corp" data-testid="input-company" {...field} />
                         </FormControl>
@@ -119,7 +119,7 @@ export default function GenerateEmail() {
                     name="role"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Recipient Role</FormLabel>
+                        <FormLabel className="text-muted-foreground">Recipient Role <span className="text-xs">(optional)</span></FormLabel>
                         <FormControl>
                           <Input placeholder="e.g. VP of Sales" data-testid="input-role" {...field} />
                         </FormControl>
@@ -129,53 +129,54 @@ export default function GenerateEmail() {
                   />
                 </div>
 
-                <FormField
-                  control={form.control}
-                  name="problemHypothesis"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Problem Hypothesis</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          placeholder="What problem do you think they're facing?"
-                          rows={2}
-                          data-testid="input-problem"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="problemHypothesis"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-muted-foreground">Problem Hypothesis <span className="text-xs">(optional)</span></FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="What problem are they facing?"
+                            data-testid="input-problem"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-                <FormField
-                  control={form.control}
-                  name="recentHook"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Recent Hook</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="e.g. Saw your Series B announcement"
-                          data-testid="input-hook"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                  <FormField
+                    control={form.control}
+                    name="recentHook"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-muted-foreground">Recent Hook <span className="text-xs">(optional)</span></FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="e.g. Saw your Series B announcement"
+                            data-testid="input-hook"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
 
                 <FormField
                   control={form.control}
                   name="context"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Additional Context</FormLabel>
+                      <FormLabel>Context</FormLabel>
                       <FormControl>
                         <Textarea
-                          placeholder="Any other context about the prospect or situation..."
-                          rows={2}
+                          placeholder="Describe what you know about the prospect, what you want to accomplish, the tone you want, or any other details that should shape the email..."
+                          rows={6}
                           data-testid="input-context"
                           {...field}
                         />
@@ -190,7 +191,7 @@ export default function GenerateEmail() {
                   name="playbookId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Playbook (optional)</FormLabel>
+                      <FormLabel className="text-muted-foreground">Playbook <span className="text-xs">(optional)</span></FormLabel>
                       <Select value={field.value} onValueChange={field.onChange}>
                         <FormControl>
                           <SelectTrigger data-testid="select-playbook">
