@@ -4,7 +4,8 @@ import { PageHeader } from "@/components/page-header";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Search, User, ChevronRight, Loader2, Building2, Mail } from "lucide-react";
+import { Search, User, ChevronRight, Loader2, Building2, Mail, Filter, X } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useQuery } from "@tanstack/react-query";
 import { getApiBaseUrl } from "@/lib/api-base";
 
@@ -27,11 +28,46 @@ interface ContactsResponse {
   error?: string;
 }
 
-async function fetchContacts(search: string): Promise<ContactsResponse> {
+interface ContactFilters {
+  lifecyclestage: string;
+  company: string;
+  jobtitle: string;
+  city: string;
+}
+
+const LIFECYCLE_STAGES = [
+  { value: "", label: "Any stage" },
+  { value: "subscriber", label: "Subscriber" },
+  { value: "lead", label: "Lead" },
+  { value: "marketingqualifiedlead", label: "MQL" },
+  { value: "salesqualifiedlead", label: "SQL" },
+  { value: "opportunity", label: "Opportunity" },
+  { value: "customer", label: "Customer" },
+  { value: "evangelist", label: "Evangelist" },
+  { value: "other", label: "Other" },
+];
+
+async function fetchContacts(search: string, filters: ContactFilters): Promise<ContactsResponse> {
   const base = getApiBaseUrl();
-  const url = search
-    ? `${base}/hubspot/contacts?search=${encodeURIComponent(search)}&limit=20`
-    : `${base}/hubspot/contacts?limit=20`;
+  const hasFilters = filters.lifecyclestage || filters.company || filters.jobtitle || filters.city;
+
+  if (hasFilters || search) {
+    const res = await fetch(`${base}/hubspot/contacts/search/filtered`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        query: search || undefined,
+        lifecyclestage: filters.lifecyclestage || undefined,
+        company: filters.company || undefined,
+        jobtitle: filters.jobtitle || undefined,
+        city: filters.city || undefined,
+      }),
+    });
+    if (!res.ok) throw new Error("Failed to fetch contacts");
+    return res.json();
+  }
+
+  const url = `${base}/hubspot/contacts?limit=20`;
   const res = await fetch(url);
   if (!res.ok) throw new Error("Failed to fetch contacts");
   return res.json();
@@ -41,15 +77,28 @@ export default function HubSpotContacts() {
   const [, navigate] = useLocation();
   const [searchInput, setSearchInput] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [showFilters, setShowFilters] = useState(false);
+  const [filters, setFilters] = useState<ContactFilters>({ lifecyclestage: "", company: "", jobtitle: "", city: "" });
+  const [activeFilters, setActiveFilters] = useState<ContactFilters>({ lifecyclestage: "", company: "", jobtitle: "", city: "" });
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ["hubspot-contacts", searchQuery],
-    queryFn: () => fetchContacts(searchQuery),
+    queryKey: ["hubspot-contacts", searchQuery, activeFilters],
+    queryFn: () => fetchContacts(searchQuery, activeFilters),
   });
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     setSearchQuery(searchInput.trim());
+    setActiveFilters({ ...filters });
+  };
+
+  const activeFilterCount = [activeFilters.lifecyclestage, activeFilters.company, activeFilters.jobtitle, activeFilters.city].filter(Boolean).length;
+
+  const clearAll = () => {
+    setSearchInput("");
+    setSearchQuery("");
+    setFilters({ lifecyclestage: "", company: "", jobtitle: "", city: "" });
+    setActiveFilters({ lifecyclestage: "", company: "", jobtitle: "", city: "" });
   };
 
   const contacts = data?.results ?? [];
@@ -64,7 +113,7 @@ export default function HubSpotContacts() {
     <div>
       <PageHeader
         title="HubSpot Contacts"
-        description="Browse your CRM contacts, view email history, and get AI-powered contact summaries"
+        description="Browse your CRM contacts, view email history, calls, notes, and get AI-powered contact summaries"
       />
 
       <div className="p-6 space-y-4 max-w-4xl">
@@ -83,16 +132,76 @@ export default function HubSpotContacts() {
             <Search className="w-4 h-4 mr-2" />
             Search
           </Button>
-          {searchQuery && (
-            <Button
-              variant="outline"
-              type="button"
-              onClick={() => { setSearchInput(""); setSearchQuery(""); }}
-            >
-              Clear
+          <Button
+            type="button"
+            variant={showFilters ? "secondary" : "outline"}
+            onClick={() => setShowFilters(!showFilters)}
+          >
+            <Filter className="w-4 h-4 mr-2" />
+            Filters
+            {activeFilterCount > 0 && (
+              <span className="ml-1.5 bg-primary text-primary-foreground text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                {activeFilterCount}
+              </span>
+            )}
+          </Button>
+          {(searchQuery || activeFilterCount > 0) && (
+            <Button variant="outline" type="button" onClick={clearAll}>
+              <X className="w-4 h-4 mr-1" /> Clear
             </Button>
           )}
         </form>
+
+        {showFilters && (
+          <Card>
+            <CardContent className="p-4">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1.5 block">Lifecycle Stage</label>
+                  <Select value={filters.lifecyclestage} onValueChange={(v) => setFilters(f => ({ ...f, lifecyclestage: v === "all" ? "" : v }))}>
+                    <SelectTrigger className="h-8 text-sm">
+                      <SelectValue placeholder="Any stage" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Any stage</SelectItem>
+                      {LIFECYCLE_STAGES.filter(s => s.value).map(s => (
+                        <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1.5 block">Company</label>
+                  <Input
+                    placeholder="Any company"
+                    value={filters.company}
+                    onChange={(e) => setFilters(f => ({ ...f, company: e.target.value }))}
+                    className="h-8 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1.5 block">Job Title</label>
+                  <Input
+                    placeholder="Any title"
+                    value={filters.jobtitle}
+                    onChange={(e) => setFilters(f => ({ ...f, jobtitle: e.target.value }))}
+                    className="h-8 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1.5 block">City</label>
+                  <Input
+                    placeholder="Any city"
+                    value={filters.city}
+                    onChange={(e) => setFilters(f => ({ ...f, city: e.target.value }))}
+                    className="h-8 text-sm"
+                  />
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground mt-3">Set filters and click Search to apply.</p>
+            </CardContent>
+          </Card>
+        )}
 
         {isLoading && (
           <div className="flex items-center justify-center py-12 text-muted-foreground gap-2">

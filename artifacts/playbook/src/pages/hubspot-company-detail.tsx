@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { OutputBox } from "@/components/output-box";
 import {
   Building2, Mail, FileText, Users, Globe, ChevronLeft,
-  Loader2, Sparkles, Calendar, ExternalLink, Pen
+  Loader2, Sparkles, Calendar, ExternalLink, Pen, PhoneCall, Clock
 } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { getApiBaseUrl } from "@/lib/api-base";
@@ -18,6 +18,12 @@ import { useListPlaybooks } from "@workspace/api-client-react";
 interface ContactProp { firstname?: string; lastname?: string; jobtitle?: string; email?: string }
 interface EmailProp { hs_email_subject?: string; hs_email_text?: string; hs_email_direction?: string; hs_timestamp?: string }
 interface NoteProp { hs_note_body?: string; hs_timestamp?: string }
+interface CallProp {
+  hs_call_title?: string; hs_call_body?: string; hs_call_direction?: string;
+  hs_timestamp?: string; hs_call_duration?: string; hs_call_status?: string;
+  hs_call_disposition?: string; hs_call_recording_url?: string;
+  hs_call_from_number?: string; hs_call_to_number?: string;
+}
 
 const GOALS = [
   { value: "zoom", label: "Set a Zoom meeting" },
@@ -50,6 +56,28 @@ async function fetchCompanyNotes(id: string) {
   return res.json();
 }
 
+async function fetchCompanyCalls(id: string) {
+  const base = getApiBaseUrl();
+  const res = await fetch(`${base}/hubspot/companies/${id}/calls`);
+  if (!res.ok) throw new Error("Failed to fetch calls");
+  return res.json();
+}
+
+function formatDuration(ms?: string) {
+  if (!ms) return "";
+  const totalSecs = Math.round(Number(ms) / 1000);
+  if (totalSecs < 60) return `${totalSecs}s`;
+  const mins = Math.floor(totalSecs / 60);
+  const secs = totalSecs % 60;
+  return secs > 0 ? `${mins}m ${secs}s` : `${mins}m`;
+}
+
+function callDirectionLabel(dir?: string) {
+  if (!dir) return "Call";
+  if (dir === "INBOUND") return "Inbound";
+  return "Outbound";
+}
+
 function formatDate(ts?: string) {
   if (!ts) return "";
   try {
@@ -78,6 +106,7 @@ export default function HubSpotCompanyDetail() {
   const [outreachGoal, setOutreachGoal] = useState("zoom");
   const [outreachContext, setOutreachContext] = useState("");
   const [expandedEmail, setExpandedEmail] = useState<string | null>(null);
+  const [expandedCall, setExpandedCall] = useState<string | null>(null);
   const [generatingType, setGeneratingType] = useState<"email" | "script" | null>(null);
 
   const { data: playbooks } = useListPlaybooks();
@@ -97,6 +126,12 @@ export default function HubSpotCompanyDetail() {
   const { data: notesData, isLoading: loadingNotes } = useQuery({
     queryKey: ["hubspot-company-notes", id],
     queryFn: () => fetchCompanyNotes(id!),
+    enabled: !!id,
+  });
+
+  const { data: callsData, isLoading: loadingCalls } = useQuery({
+    queryKey: ["hubspot-company-calls", id],
+    queryFn: () => fetchCompanyCalls(id!),
     enabled: !!id,
   });
 
@@ -149,6 +184,7 @@ export default function HubSpotCompanyDetail() {
   const contacts: Array<{ id: string; properties: ContactProp }> = detail?.contacts ?? [];
   const emails: Array<{ id: string; properties: EmailProp }> = emailsData?.results ?? [];
   const notes: Array<{ id: string; properties: NoteProp }> = notesData?.results ?? [];
+  const calls: Array<{ id: string; properties: CallProp }> = callsData?.results ?? [];
 
   if (loadingDetail) {
     return (
@@ -431,6 +467,90 @@ export default function HubSpotCompanyDetail() {
                         {note.properties.hs_note_body ?? "(empty note)"}
                       </p>
                     </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <PhoneCall className="w-4 h-4 text-primary" />
+                Call History
+                {loadingCalls && <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />}
+                {!loadingCalls && <span className="text-muted-foreground font-normal">({calls.length})</span>}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {calls.length === 0 && !loadingCalls && (
+                <p className="text-sm text-muted-foreground">No calls found for this account.</p>
+              )}
+              <div className="space-y-2">
+                {calls.map((call) => (
+                  <div key={call.id} className="border border-border rounded-md overflow-hidden" data-testid={`call-row-${call.id}`}>
+                    <button
+                      className="w-full flex items-center justify-between px-3 py-2.5 text-left hover:bg-accent/20 transition-colors"
+                      onClick={() => setExpandedCall(expandedCall === call.id ? null : call.id)}
+                    >
+                      <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                        <span className={`text-xs px-1.5 py-0.5 rounded font-medium shrink-0 ${
+                          callDirectionLabel(call.properties.hs_call_direction) === "Inbound"
+                            ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
+                            : "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300"
+                        }`}>
+                          {callDirectionLabel(call.properties.hs_call_direction)}
+                        </span>
+                        <span className="text-sm font-medium truncate">
+                          {call.properties.hs_call_title ?? "Call"}
+                        </span>
+                        {call.properties.hs_call_duration && (
+                          <span className="flex items-center gap-1 text-xs text-muted-foreground shrink-0">
+                            <Clock className="w-3 h-3" />
+                            {formatDuration(call.properties.hs_call_duration)}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground shrink-0 ml-2">
+                        <Calendar className="w-3 h-3" />
+                        {formatDate(call.properties.hs_timestamp)}
+                      </div>
+                    </button>
+                    {expandedCall === call.id && (
+                      <div className="px-3 py-3 border-t border-border bg-muted/20 space-y-2">
+                        {call.properties.hs_call_disposition && (
+                          <p className="text-xs text-muted-foreground">Outcome: {call.properties.hs_call_disposition}</p>
+                        )}
+                        {(call.properties.hs_call_from_number || call.properties.hs_call_to_number) && (
+                          <p className="text-xs text-muted-foreground">
+                            {call.properties.hs_call_from_number && `From: ${call.properties.hs_call_from_number}`}
+                            {call.properties.hs_call_from_number && call.properties.hs_call_to_number && " | "}
+                            {call.properties.hs_call_to_number && `To: ${call.properties.hs_call_to_number}`}
+                          </p>
+                        )}
+                        {call.properties.hs_call_body ? (
+                          <div>
+                            <p className="text-xs font-medium text-muted-foreground mb-1">Notes / Transcript:</p>
+                            <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">
+                              {call.properties.hs_call_body.slice(0, 3000)}
+                              {call.properties.hs_call_body.length > 3000 ? "\n\n[truncated...]" : ""}
+                            </p>
+                          </div>
+                        ) : (
+                          <p className="text-sm text-muted-foreground">No notes or transcript recorded.</p>
+                        )}
+                        {call.properties.hs_call_recording_url && (
+                          <a
+                            href={call.properties.hs_call_recording_url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                          >
+                            <ExternalLink className="w-3 h-3" /> Listen to recording
+                          </a>
+                        )}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

@@ -147,6 +147,130 @@ router.get("/companies/:id/notes", async (req, res) => {
   }
 });
 
+// Calls for a company
+router.get("/companies/:id/calls", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const connectors = getConnectors();
+
+    const searchBody = {
+      filterGroups: [
+        {
+          filters: [
+            { propertyName: "associations.company", operator: "EQ", value: id },
+          ],
+        },
+      ],
+      sorts: [{ propertyName: "hs_timestamp", direction: "DESCENDING" }],
+      properties: [
+        "hs_call_title", "hs_call_body", "hs_call_direction", "hs_timestamp",
+        "hs_call_duration", "hs_call_status", "hs_call_disposition",
+        "hs_call_recording_url", "hs_call_from_number", "hs_call_to_number",
+      ],
+      limit: 20,
+    };
+
+    const response = await connectors.proxy("hubspot", "/crm/v3/objects/calls/search", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(searchBody),
+    });
+    const data = await response.json();
+    res.json(data);
+  } catch (err) {
+    req.log.error({ err }, "Failed to fetch company calls");
+    res.status(500).json({ error: "Failed to fetch calls" });
+  }
+});
+
+// Advanced filtered search for companies
+router.post("/companies/search/filtered", async (req, res) => {
+  try {
+    const { industry, city, minEmployees, maxEmployees, minRevenue, maxRevenue, query, limit: reqLimit } = req.body as {
+      industry?: string;
+      city?: string;
+      minEmployees?: string;
+      maxEmployees?: string;
+      minRevenue?: string;
+      maxRevenue?: string;
+      query?: string;
+      limit?: number;
+    };
+
+    const filters: Array<{ propertyName: string; operator: string; value?: string; highValue?: string }> = [];
+
+    if (industry) filters.push({ propertyName: "industry", operator: "EQ", value: industry });
+    if (city) filters.push({ propertyName: "city", operator: "CONTAINS_TOKEN", value: city });
+    if (minEmployees) filters.push({ propertyName: "numberofemployees", operator: "GTE", value: minEmployees });
+    if (maxEmployees) filters.push({ propertyName: "numberofemployees", operator: "LTE", value: maxEmployees });
+    if (minRevenue) filters.push({ propertyName: "annualrevenue", operator: "GTE", value: minRevenue });
+    if (maxRevenue) filters.push({ propertyName: "annualrevenue", operator: "LTE", value: maxRevenue });
+
+    const connectors = getConnectors();
+    const body: Record<string, unknown> = {
+      limit: reqLimit ?? 20,
+      properties: ["name", "domain", "industry", "city", "country", "numberofemployees", "annualrevenue", "hs_lastmodifieddate"],
+      sorts: [{ propertyName: "hs_lastmodifieddate", direction: "DESCENDING" }],
+    };
+
+    if (query) body.query = query;
+    if (filters.length > 0) body.filterGroups = [{ filters }];
+
+    const response = await connectors.proxy("hubspot", "/crm/v3/objects/companies/search", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    const data = await response.json();
+    res.json(data);
+  } catch (err) {
+    req.log.error({ err }, "Failed to filter companies");
+    res.status(500).json({ error: "Failed to filter companies" });
+  }
+});
+
+// Advanced filtered search for contacts
+router.post("/contacts/search/filtered", async (req, res) => {
+  try {
+    const { lifecyclestage, company, jobtitle, city, query, limit: reqLimit } = req.body as {
+      lifecyclestage?: string;
+      company?: string;
+      jobtitle?: string;
+      city?: string;
+      query?: string;
+      limit?: number;
+    };
+
+    const filters: Array<{ propertyName: string; operator: string; value?: string }> = [];
+
+    if (lifecyclestage) filters.push({ propertyName: "lifecyclestage", operator: "EQ", value: lifecyclestage });
+    if (company) filters.push({ propertyName: "company", operator: "CONTAINS_TOKEN", value: company });
+    if (jobtitle) filters.push({ propertyName: "jobtitle", operator: "CONTAINS_TOKEN", value: jobtitle });
+    if (city) filters.push({ propertyName: "city", operator: "CONTAINS_TOKEN", value: city });
+
+    const connectors = getConnectors();
+    const body: Record<string, unknown> = {
+      limit: reqLimit ?? 20,
+      properties: ["firstname", "lastname", "email", "jobtitle", "company", "phone", "lifecyclestage", "city", "hs_lastmodifieddate"],
+      sorts: [{ propertyName: "hs_lastmodifieddate", direction: "DESCENDING" }],
+    };
+
+    if (query) body.query = query;
+    if (filters.length > 0) body.filterGroups = [{ filters }];
+
+    const response = await connectors.proxy("hubspot", "/crm/v3/objects/contacts/search", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    const data = await response.json();
+    res.json(data);
+  } catch (err) {
+    req.log.error({ err }, "Failed to filter contacts");
+    res.status(500).json({ error: "Failed to filter contacts" });
+  }
+});
+
 router.post("/companies/:id/summarize", async (req, res) => {
   try {
     const { id } = req.params;
@@ -296,6 +420,74 @@ router.get("/contacts/:id", async (req, res) => {
   } catch (err) {
     req.log.error({ err }, "Failed to fetch HubSpot contact detail");
     res.status(500).json({ error: "Failed to fetch contact from HubSpot" });
+  }
+});
+
+// Calls for a contact
+router.get("/contacts/:id/calls", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const connectors = getConnectors();
+
+    const searchBody = {
+      filterGroups: [
+        {
+          filters: [
+            { propertyName: "associations.contact", operator: "EQ", value: id },
+          ],
+        },
+      ],
+      sorts: [{ propertyName: "hs_timestamp", direction: "DESCENDING" }],
+      properties: [
+        "hs_call_title", "hs_call_body", "hs_call_direction", "hs_timestamp",
+        "hs_call_duration", "hs_call_status", "hs_call_disposition",
+        "hs_call_recording_url", "hs_call_from_number", "hs_call_to_number",
+      ],
+      limit: 20,
+    };
+
+    const response = await connectors.proxy("hubspot", "/crm/v3/objects/calls/search", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(searchBody),
+    });
+    const data = await response.json();
+    res.json(data);
+  } catch (err) {
+    req.log.error({ err }, "Failed to fetch contact calls");
+    res.status(500).json({ error: "Failed to fetch calls" });
+  }
+});
+
+// Notes for a contact
+router.get("/contacts/:id/notes", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const connectors = getConnectors();
+
+    const searchBody = {
+      filterGroups: [
+        {
+          filters: [
+            { propertyName: "associations.contact", operator: "EQ", value: id },
+          ],
+        },
+      ],
+      sorts: [{ propertyName: "hs_timestamp", direction: "DESCENDING" }],
+      properties: ["hs_note_body", "hs_timestamp", "hs_lastmodifieddate"],
+      limit: 20,
+    };
+
+    const response = await connectors.proxy("hubspot", "/crm/v3/objects/notes/search", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(searchBody),
+    });
+    const data = await response.json();
+    res.json(data);
+  } catch (err) {
+    req.log.error({ err }, "Failed to fetch contact notes");
+    res.status(500).json({ error: "Failed to fetch notes" });
   }
 });
 
