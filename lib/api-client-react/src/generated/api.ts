@@ -5,18 +5,35 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import type {
+  MutationFunction,
   QueryFunction,
   QueryKey,
+  UseMutationOptions,
+  UseMutationResult,
   UseQueryOptions,
   UseQueryResult,
 } from "@tanstack/react-query";
 
-import type { HealthStatus } from "./api.schemas";
+import type {
+  AnalysisResult,
+  AnalyzeEmailsBody,
+  ApiError,
+  CreatePlaybookBody,
+  DashboardStats,
+  GenerateEmailBody,
+  GenerateScriptBody,
+  Generation,
+  GenerationResult,
+  HealthStatus,
+  Playbook,
+  PlaybookWithPatterns,
+  SuggestEditsBody,
+} from "./api.schemas";
 
 import { customFetch } from "../custom-fetch";
-import type { ErrorType } from "../custom-fetch";
+import type { ErrorType, BodyType } from "../custom-fetch";
 
 type AwaitedInput<T> = PromiseLike<T> | T;
 
@@ -92,6 +109,908 @@ export function useHealthCheck<
   request?: SecondParameter<typeof customFetch>;
 }): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
   const queryOptions = getHealthCheckQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary List all playbooks
+ */
+export const getListPlaybooksUrl = () => {
+  return `/api/playbooks`;
+};
+
+export const listPlaybooks = async (
+  options?: RequestInit,
+): Promise<Playbook[]> => {
+  return customFetch<Playbook[]>(getListPlaybooksUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListPlaybooksQueryKey = () => {
+  return [`/api/playbooks`] as const;
+};
+
+export const getListPlaybooksQueryOptions = <
+  TData = Awaited<ReturnType<typeof listPlaybooks>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listPlaybooks>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListPlaybooksQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listPlaybooks>>> = ({
+    signal,
+  }) => listPlaybooks({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listPlaybooks>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListPlaybooksQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listPlaybooks>>
+>;
+export type ListPlaybooksQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List all playbooks
+ */
+
+export function useListPlaybooks<
+  TData = Awaited<ReturnType<typeof listPlaybooks>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listPlaybooks>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListPlaybooksQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Create a new playbook
+ */
+export const getCreatePlaybookUrl = () => {
+  return `/api/playbooks`;
+};
+
+export const createPlaybook = async (
+  createPlaybookBody: CreatePlaybookBody,
+  options?: RequestInit,
+): Promise<Playbook> => {
+  return customFetch<Playbook>(getCreatePlaybookUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(createPlaybookBody),
+  });
+};
+
+export const getCreatePlaybookMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createPlaybook>>,
+    TError,
+    { data: BodyType<CreatePlaybookBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createPlaybook>>,
+  TError,
+  { data: BodyType<CreatePlaybookBody> },
+  TContext
+> => {
+  const mutationKey = ["createPlaybook"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createPlaybook>>,
+    { data: BodyType<CreatePlaybookBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createPlaybook(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreatePlaybookMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createPlaybook>>
+>;
+export type CreatePlaybookMutationBody = BodyType<CreatePlaybookBody>;
+export type CreatePlaybookMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Create a new playbook
+ */
+export const useCreatePlaybook = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createPlaybook>>,
+    TError,
+    { data: BodyType<CreatePlaybookBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createPlaybook>>,
+  TError,
+  { data: BodyType<CreatePlaybookBody> },
+  TContext
+> => {
+  return useMutation(getCreatePlaybookMutationOptions(options));
+};
+
+/**
+ * @summary Get a playbook with its patterns
+ */
+export const getGetPlaybookUrl = (id: number) => {
+  return `/api/playbooks/${id}`;
+};
+
+export const getPlaybook = async (
+  id: number,
+  options?: RequestInit,
+): Promise<PlaybookWithPatterns> => {
+  return customFetch<PlaybookWithPatterns>(getGetPlaybookUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetPlaybookQueryKey = (id: number) => {
+  return [`/api/playbooks/${id}`] as const;
+};
+
+export const getGetPlaybookQueryOptions = <
+  TData = Awaited<ReturnType<typeof getPlaybook>>,
+  TError = ErrorType<ApiError>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getPlaybook>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetPlaybookQueryKey(id);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getPlaybook>>> = ({
+    signal,
+  }) => getPlaybook(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getPlaybook>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetPlaybookQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getPlaybook>>
+>;
+export type GetPlaybookQueryError = ErrorType<ApiError>;
+
+/**
+ * @summary Get a playbook with its patterns
+ */
+
+export function useGetPlaybook<
+  TData = Awaited<ReturnType<typeof getPlaybook>>,
+  TError = ErrorType<ApiError>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getPlaybook>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetPlaybookQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Delete a playbook
+ */
+export const getDeletePlaybookUrl = (id: number) => {
+  return `/api/playbooks/${id}`;
+};
+
+export const deletePlaybook = async (
+  id: number,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getDeletePlaybookUrl(id), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeletePlaybookMutationOptions = <
+  TError = ErrorType<ApiError>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deletePlaybook>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deletePlaybook>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["deletePlaybook"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deletePlaybook>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return deletePlaybook(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeletePlaybookMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deletePlaybook>>
+>;
+
+export type DeletePlaybookMutationError = ErrorType<ApiError>;
+
+/**
+ * @summary Delete a playbook
+ */
+export const useDeletePlaybook = <
+  TError = ErrorType<ApiError>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deletePlaybook>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deletePlaybook>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getDeletePlaybookMutationOptions(options));
+};
+
+/**
+ * @summary Analyze emails to extract patterns into a playbook
+ */
+export const getAnalyzeEmailsUrl = (id: number) => {
+  return `/api/playbooks/${id}/analyze`;
+};
+
+export const analyzeEmails = async (
+  id: number,
+  analyzeEmailsBody: AnalyzeEmailsBody,
+  options?: RequestInit,
+): Promise<AnalysisResult> => {
+  return customFetch<AnalysisResult>(getAnalyzeEmailsUrl(id), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(analyzeEmailsBody),
+  });
+};
+
+export const getAnalyzeEmailsMutationOptions = <
+  TError = ErrorType<ApiError>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof analyzeEmails>>,
+    TError,
+    { id: number; data: BodyType<AnalyzeEmailsBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof analyzeEmails>>,
+  TError,
+  { id: number; data: BodyType<AnalyzeEmailsBody> },
+  TContext
+> => {
+  const mutationKey = ["analyzeEmails"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof analyzeEmails>>,
+    { id: number; data: BodyType<AnalyzeEmailsBody> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return analyzeEmails(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AnalyzeEmailsMutationResult = NonNullable<
+  Awaited<ReturnType<typeof analyzeEmails>>
+>;
+export type AnalyzeEmailsMutationBody = BodyType<AnalyzeEmailsBody>;
+export type AnalyzeEmailsMutationError = ErrorType<ApiError>;
+
+/**
+ * @summary Analyze emails to extract patterns into a playbook
+ */
+export const useAnalyzeEmails = <
+  TError = ErrorType<ApiError>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof analyzeEmails>>,
+    TError,
+    { id: number; data: BodyType<AnalyzeEmailsBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof analyzeEmails>>,
+  TError,
+  { id: number; data: BodyType<AnalyzeEmailsBody> },
+  TContext
+> => {
+  return useMutation(getAnalyzeEmailsMutationOptions(options));
+};
+
+/**
+ * @summary List all generations
+ */
+export const getListGenerationsUrl = () => {
+  return `/api/generations`;
+};
+
+export const listGenerations = async (
+  options?: RequestInit,
+): Promise<Generation[]> => {
+  return customFetch<Generation[]>(getListGenerationsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListGenerationsQueryKey = () => {
+  return [`/api/generations`] as const;
+};
+
+export const getListGenerationsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listGenerations>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listGenerations>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListGenerationsQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listGenerations>>> = ({
+    signal,
+  }) => listGenerations({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listGenerations>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListGenerationsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listGenerations>>
+>;
+export type ListGenerationsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List all generations
+ */
+
+export function useListGenerations<
+  TData = Awaited<ReturnType<typeof listGenerations>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listGenerations>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListGenerationsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Generate a sales email using playbook patterns
+ */
+export const getGenerateEmailUrl = () => {
+  return `/api/generations/email`;
+};
+
+export const generateEmail = async (
+  generateEmailBody: GenerateEmailBody,
+  options?: RequestInit,
+): Promise<GenerationResult> => {
+  return customFetch<GenerationResult>(getGenerateEmailUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(generateEmailBody),
+  });
+};
+
+export const getGenerateEmailMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof generateEmail>>,
+    TError,
+    { data: BodyType<GenerateEmailBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof generateEmail>>,
+  TError,
+  { data: BodyType<GenerateEmailBody> },
+  TContext
+> => {
+  const mutationKey = ["generateEmail"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof generateEmail>>,
+    { data: BodyType<GenerateEmailBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return generateEmail(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type GenerateEmailMutationResult = NonNullable<
+  Awaited<ReturnType<typeof generateEmail>>
+>;
+export type GenerateEmailMutationBody = BodyType<GenerateEmailBody>;
+export type GenerateEmailMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Generate a sales email using playbook patterns
+ */
+export const useGenerateEmail = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof generateEmail>>,
+    TError,
+    { data: BodyType<GenerateEmailBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof generateEmail>>,
+  TError,
+  { data: BodyType<GenerateEmailBody> },
+  TContext
+> => {
+  return useMutation(getGenerateEmailMutationOptions(options));
+};
+
+/**
+ * @summary Generate a call script using playbook patterns
+ */
+export const getGenerateScriptUrl = () => {
+  return `/api/generations/script`;
+};
+
+export const generateScript = async (
+  generateScriptBody: GenerateScriptBody,
+  options?: RequestInit,
+): Promise<GenerationResult> => {
+  return customFetch<GenerationResult>(getGenerateScriptUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(generateScriptBody),
+  });
+};
+
+export const getGenerateScriptMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof generateScript>>,
+    TError,
+    { data: BodyType<GenerateScriptBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof generateScript>>,
+  TError,
+  { data: BodyType<GenerateScriptBody> },
+  TContext
+> => {
+  const mutationKey = ["generateScript"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof generateScript>>,
+    { data: BodyType<GenerateScriptBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return generateScript(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type GenerateScriptMutationResult = NonNullable<
+  Awaited<ReturnType<typeof generateScript>>
+>;
+export type GenerateScriptMutationBody = BodyType<GenerateScriptBody>;
+export type GenerateScriptMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Generate a call script using playbook patterns
+ */
+export const useGenerateScript = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof generateScript>>,
+    TError,
+    { data: BodyType<GenerateScriptBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof generateScript>>,
+  TError,
+  { data: BodyType<GenerateScriptBody> },
+  TContext
+> => {
+  return useMutation(getGenerateScriptMutationOptions(options));
+};
+
+/**
+ * @summary Suggest edits for a draft email
+ */
+export const getSuggestEditsUrl = () => {
+  return `/api/generations/suggest-edits`;
+};
+
+export const suggestEdits = async (
+  suggestEditsBody: SuggestEditsBody,
+  options?: RequestInit,
+): Promise<GenerationResult> => {
+  return customFetch<GenerationResult>(getSuggestEditsUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(suggestEditsBody),
+  });
+};
+
+export const getSuggestEditsMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof suggestEdits>>,
+    TError,
+    { data: BodyType<SuggestEditsBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof suggestEdits>>,
+  TError,
+  { data: BodyType<SuggestEditsBody> },
+  TContext
+> => {
+  const mutationKey = ["suggestEdits"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof suggestEdits>>,
+    { data: BodyType<SuggestEditsBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return suggestEdits(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type SuggestEditsMutationResult = NonNullable<
+  Awaited<ReturnType<typeof suggestEdits>>
+>;
+export type SuggestEditsMutationBody = BodyType<SuggestEditsBody>;
+export type SuggestEditsMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Suggest edits for a draft email
+ */
+export const useSuggestEdits = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof suggestEdits>>,
+    TError,
+    { data: BodyType<SuggestEditsBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof suggestEdits>>,
+  TError,
+  { data: BodyType<SuggestEditsBody> },
+  TContext
+> => {
+  return useMutation(getSuggestEditsMutationOptions(options));
+};
+
+/**
+ * @summary Get dashboard statistics
+ */
+export const getGetDashboardStatsUrl = () => {
+  return `/api/dashboard/stats`;
+};
+
+export const getDashboardStats = async (
+  options?: RequestInit,
+): Promise<DashboardStats> => {
+  return customFetch<DashboardStats>(getGetDashboardStatsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetDashboardStatsQueryKey = () => {
+  return [`/api/dashboard/stats`] as const;
+};
+
+export const getGetDashboardStatsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getDashboardStats>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getDashboardStats>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetDashboardStatsQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getDashboardStats>>
+  > = ({ signal }) => getDashboardStats({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getDashboardStats>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetDashboardStatsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getDashboardStats>>
+>;
+export type GetDashboardStatsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get dashboard statistics
+ */
+
+export function useGetDashboardStats<
+  TData = Awaited<ReturnType<typeof getDashboardStats>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getDashboardStats>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetDashboardStatsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Get recent generation activity
+ */
+export const getGetRecentGenerationsUrl = () => {
+  return `/api/dashboard/recent-generations`;
+};
+
+export const getRecentGenerations = async (
+  options?: RequestInit,
+): Promise<Generation[]> => {
+  return customFetch<Generation[]>(getGetRecentGenerationsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetRecentGenerationsQueryKey = () => {
+  return [`/api/dashboard/recent-generations`] as const;
+};
+
+export const getGetRecentGenerationsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getRecentGenerations>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getRecentGenerations>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetRecentGenerationsQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getRecentGenerations>>
+  > = ({ signal }) => getRecentGenerations({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getRecentGenerations>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetRecentGenerationsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getRecentGenerations>>
+>;
+export type GetRecentGenerationsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get recent generation activity
+ */
+
+export function useGetRecentGenerations<
+  TData = Awaited<ReturnType<typeof getRecentGenerations>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getRecentGenerations>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetRecentGenerationsQueryOptions(options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;

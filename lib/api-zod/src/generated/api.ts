@@ -14,3 +14,168 @@ import * as zod from "zod";
 export const HealthCheckResponse = zod.object({
   status: zod.string(),
 });
+
+/**
+ * @summary List all playbooks
+ */
+export const ListPlaybooksResponseItem = zod.object({
+  id: zod.number(),
+  name: zod.string(),
+  description: zod.string(),
+  qualityScore: zod.number().nullish(),
+  emailCount: zod.number(),
+  createdAt: zod.coerce.date(),
+  updatedAt: zod.coerce.date(),
+});
+export const ListPlaybooksResponse = zod.array(ListPlaybooksResponseItem);
+
+/**
+ * @summary Create a new playbook
+ */
+export const CreatePlaybookBody = zod.object({
+  name: zod.string(),
+  description: zod.string(),
+});
+
+/**
+ * @summary Get a playbook with its patterns
+ */
+export const GetPlaybookParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetPlaybookResponse = zod.object({
+  id: zod.number(),
+  name: zod.string(),
+  description: zod.string(),
+  qualityScore: zod.number().nullish(),
+  emailCount: zod.number(),
+  createdAt: zod.coerce.date(),
+  updatedAt: zod.coerce.date(),
+  patterns: zod.array(
+    zod.object({
+      id: zod.number(),
+      playbookId: zod.number(),
+      type: zod.string(),
+      text: zod.string(),
+      examples: zod.array(zod.string()),
+    }),
+  ),
+  principles: zod.array(zod.string()),
+});
+
+/**
+ * @summary Delete a playbook
+ */
+export const DeletePlaybookParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+/**
+ * @summary Analyze emails to extract patterns into a playbook
+ */
+export const AnalyzeEmailsParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const AnalyzeEmailsBody = zod.object({
+  emails: zod.array(zod.string()),
+});
+
+export const AnalyzeEmailsResponse = zod.object({
+  patterns: zod.array(
+    zod.object({
+      type: zod.string(),
+      text: zod.string(),
+      examples: zod.array(zod.string()),
+    }),
+  ),
+  principles: zod.array(zod.string()),
+  qualityScore: zod.number(),
+});
+
+/**
+ * @summary List all generations
+ */
+export const ListGenerationsResponseItem = zod.object({
+  id: zod.number(),
+  type: zod.string(),
+  company: zod.string().nullish(),
+  role: zod.string().nullish(),
+  output: zod.string(),
+  playbookId: zod.number().nullish(),
+  createdAt: zod.coerce.date(),
+});
+export const ListGenerationsResponse = zod.array(ListGenerationsResponseItem);
+
+/**
+ * @summary Generate a sales email using playbook patterns
+ */
+export const GenerateEmailBody = zod.object({
+  company: zod.string(),
+  role: zod.string(),
+  problemHypothesis: zod.string(),
+  recentHook: zod.string(),
+  context: zod.string(),
+  playbookId: zod.number().nullish(),
+});
+
+export const GenerateEmailResponse = zod.object({
+  output: zod.string(),
+  generationId: zod.number(),
+});
+
+/**
+ * @summary Generate a call script using playbook patterns
+ */
+export const GenerateScriptBody = zod.object({
+  objective: zod.string(),
+  context: zod.string(),
+  playbookId: zod.number().nullish(),
+});
+
+export const GenerateScriptResponse = zod.object({
+  output: zod.string(),
+  generationId: zod.number(),
+});
+
+/**
+ * @summary Suggest edits for a draft email
+ */
+export const SuggestEditsBody = zod.object({
+  draftEmail: zod.string(),
+  playbookId: zod.number().nullish(),
+});
+
+export const SuggestEditsResponse = zod.object({
+  output: zod.string(),
+  generationId: zod.number(),
+});
+
+/**
+ * @summary Get dashboard statistics
+ */
+export const GetDashboardStatsResponse = zod.object({
+  totalPlaybooks: zod.number(),
+  totalGenerations: zod.number(),
+  totalEmailsAnalyzed: zod.number(),
+  emailsGenerated: zod.number(),
+  scriptsGenerated: zod.number(),
+  editsRequested: zod.number(),
+});
+
+/**
+ * @summary Get recent generation activity
+ */
+export const GetRecentGenerationsResponseItem = zod.object({
+  id: zod.number(),
+  type: zod.string(),
+  company: zod.string().nullish(),
+  role: zod.string().nullish(),
+  output: zod.string(),
+  playbookId: zod.number().nullish(),
+  createdAt: zod.coerce.date(),
+});
+export const GetRecentGenerationsResponse = zod.array(
+  GetRecentGenerationsResponseItem,
+);

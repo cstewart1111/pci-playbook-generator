@@ -6,4 +6,18 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from "./analysisResult";
+export * from "./analysisResultPatternsItem";
+export * from "./analyzeEmailsBody";
+export * from "./apiError";
+export * from "./createPlaybookBody";
+export * from "./dashboardStats";
+export * from "./generateEmailBody";
+export * from "./generateScriptBody";
+export * from "./generation";
+export * from "./generationResult";
 export * from "./healthStatus";
+export * from "./pattern";
+export * from "./playbook";
+export * from "./playbookWithPatterns";
+export * from "./suggestEditsBody";

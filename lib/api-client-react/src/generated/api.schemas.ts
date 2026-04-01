@@ -8,3 +8,102 @@
 export interface HealthStatus {
   status: string;
 }
+
+export interface Playbook {
+  id: number;
+  name: string;
+  description: string;
+  qualityScore?: number | null;
+  emailCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Pattern {
+  id: number;
+  playbookId: number;
+  type: string;
+  text: string;
+  examples: string[];
+}
+
+export interface PlaybookWithPatterns {
+  id: number;
+  name: string;
+  description: string;
+  qualityScore?: number | null;
+  emailCount: number;
+  createdAt: string;
+  updatedAt: string;
+  patterns: Pattern[];
+  principles: string[];
+}
+
+export interface CreatePlaybookBody {
+  name: string;
+  description: string;
+}
+
+export interface AnalyzeEmailsBody {
+  emails: string[];
+}
+
+export type AnalysisResultPatternsItem = {
+  type: string;
+  text: string;
+  examples: string[];
+};
+
+export interface AnalysisResult {
+  patterns: AnalysisResultPatternsItem[];
+  principles: string[];
+  qualityScore: number;
+}
+
+export interface Generation {
+  id: number;
+  type: string;
+  company?: string | null;
+  role?: string | null;
+  output: string;
+  playbookId?: number | null;
+  createdAt: string;
+}
+
+export interface GenerationResult {
+  output: string;
+  generationId: number;
+}
+
+export interface GenerateEmailBody {
+  company: string;
+  role: string;
+  problemHypothesis: string;
+  recentHook: string;
+  context: string;
+  playbookId?: number | null;
+}
+
+export interface GenerateScriptBody {
+  objective: string;
+  context: string;
+  playbookId?: number | null;
+}
+
+export interface SuggestEditsBody {
+  draftEmail: string;
+  playbookId?: number | null;
+}
+
+export interface DashboardStats {
+  totalPlaybooks: number;
+  totalGenerations: number;
+  totalEmailsAnalyzed: number;
+  emailsGenerated: number;
+  scriptsGenerated: number;
+  editsRequested: number;
+}
+
+export interface ApiError {
+  error: string;
+}

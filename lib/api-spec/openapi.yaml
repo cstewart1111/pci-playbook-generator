@@ -1,6 +1,5 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
   description: API specification
@@ -10,6 +9,12 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: playbooks
+    description: Playbook management
+  - name: generations
+    description: AI generation operations
+  - name: dashboard
+    description: Dashboard summary data
 paths:
   /healthz:
     get:
@@ -24,6 +29,214 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /playbooks:
+    get:
+      operationId: listPlaybooks
+      tags: [playbooks]
+      summary: List all playbooks
+      responses:
+        "200":
+          description: List of playbooks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Playbook"
+    post:
+      operationId: createPlaybook
+      tags: [playbooks]
+      summary: Create a new playbook
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePlaybookBody"
+      responses:
+        "201":
+          description: Created playbook
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Playbook"
+
+  /playbooks/{id}:
+    get:
+      operationId: getPlaybook
+      tags: [playbooks]
+      summary: Get a playbook with its patterns
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Playbook with patterns
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlaybookWithPatterns"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+    delete:
+      operationId: deletePlaybook
+      tags: [playbooks]
+      summary: Delete a playbook
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /playbooks/{id}/analyze:
+    post:
+      operationId: analyzeEmails
+      tags: [playbooks]
+      summary: Analyze emails to extract patterns into a playbook
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AnalyzeEmailsBody"
+      responses:
+        "200":
+          description: Analysis result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnalysisResult"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /generations:
+    get:
+      operationId: listGenerations
+      tags: [generations]
+      summary: List all generations
+      responses:
+        "200":
+          description: List of generations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Generation"
+
+  /generations/email:
+    post:
+      operationId: generateEmail
+      tags: [generations]
+      summary: Generate a sales email using playbook patterns
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenerateEmailBody"
+      responses:
+        "200":
+          description: Generated email
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenerationResult"
+
+  /generations/script:
+    post:
+      operationId: generateScript
+      tags: [generations]
+      summary: Generate a call script using playbook patterns
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenerateScriptBody"
+      responses:
+        "200":
+          description: Generated script
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenerationResult"
+
+  /generations/suggest-edits:
+    post:
+      operationId: suggestEdits
+      tags: [generations]
+      summary: Suggest edits for a draft email
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SuggestEditsBody"
+      responses:
+        "200":
+          description: Edit suggestions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenerationResult"
+
+  /dashboard/stats:
+    get:
+      operationId: getDashboardStats
+      tags: [dashboard]
+      summary: Get dashboard statistics
+      responses:
+        "200":
+          description: Dashboard stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardStats"
+
+  /dashboard/recent-generations:
+    get:
+      operationId: getRecentGenerations
+      tags: [dashboard]
+      summary: Get recent generation activity
+      responses:
+        "200":
+          description: Recent generations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Generation"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +247,259 @@ components:
       required:
         - status
 
+    Playbook:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+        qualityScore:
+          type: integer
+          nullable: true
+        emailCount:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - name
+        - description
+        - emailCount
+        - createdAt
+        - updatedAt
+
+    PlaybookWithPatterns:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+        qualityScore:
+          type: integer
+          nullable: true
+        emailCount:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        patterns:
+          type: array
+          items:
+            $ref: "#/components/schemas/Pattern"
+        principles:
+          type: array
+          items:
+            type: string
+      required:
+        - id
+        - name
+        - description
+        - emailCount
+        - createdAt
+        - updatedAt
+        - patterns
+        - principles
+
+    Pattern:
+      type: object
+      properties:
+        id:
+          type: integer
+        playbookId:
+          type: integer
+        type:
+          type: string
+        text:
+          type: string
+        examples:
+          type: array
+          items:
+            type: string
+      required:
+        - id
+        - playbookId
+        - type
+        - text
+        - examples
+
+    CreatePlaybookBody:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+      required:
+        - name
+        - description
+
+    AnalyzeEmailsBody:
+      type: object
+      properties:
+        emails:
+          type: array
+          items:
+            type: string
+      required:
+        - emails
+
+    AnalysisResult:
+      type: object
+      properties:
+        patterns:
+          type: array
+          items:
+            type: object
+            properties:
+              type:
+                type: string
+              text:
+                type: string
+              examples:
+                type: array
+                items:
+                  type: string
+            required:
+              - type
+              - text
+              - examples
+        principles:
+          type: array
+          items:
+            type: string
+        qualityScore:
+          type: integer
+      required:
+        - patterns
+        - principles
+        - qualityScore
+
+    Generation:
+      type: object
+      properties:
+        id:
+          type: integer
+        type:
+          type: string
+        company:
+          type: string
+          nullable: true
+        role:
+          type: string
+          nullable: true
+        output:
+          type: string
+        playbookId:
+          type: integer
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - type
+        - output
+        - createdAt
+
+    GenerationResult:
+      type: object
+      properties:
+        output:
+          type: string
+        generationId:
+          type: integer
+      required:
+        - output
+        - generationId
+
+    GenerateEmailBody:
+      type: object
+      properties:
+        company:
+          type: string
+        role:
+          type: string
+        problemHypothesis:
+          type: string
+        recentHook:
+          type: string
+        context:
+          type: string
+        playbookId:
+          type: integer
+          nullable: true
+      required:
+        - company
+        - role
+        - problemHypothesis
+        - recentHook
+        - context
+
+    GenerateScriptBody:
+      type: object
+      properties:
+        objective:
+          type: string
+        context:
+          type: string
+        playbookId:
+          type: integer
+          nullable: true
+      required:
+        - objective
+        - context
+
+    SuggestEditsBody:
+      type: object
+      properties:
+        draftEmail:
+          type: string
+        playbookId:
+          type: integer
+          nullable: true
+      required:
+        - draftEmail
+
+    DashboardStats:
+      type: object
+      properties:
+        totalPlaybooks:
+          type: integer
+        totalGenerations:
+          type: integer
+        totalEmailsAnalyzed:
+          type: integer
+        emailsGenerated:
+          type: integer
+        scriptsGenerated:
+          type: integer
+        editsRequested:
+          type: integer
+      required:
+        - totalPlaybooks
+        - totalGenerations
+        - totalEmailsAnalyzed
+        - emailsGenerated
+        - scriptsGenerated
+        - editsRequested
+
+    ApiError:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error

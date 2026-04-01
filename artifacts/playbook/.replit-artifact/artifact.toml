@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Consultative Playbook Generator"
+version = "1.0.0"
+id = "artifacts/playbook"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 20600
+
+[services.development]
+run = "pnpm --filter @workspace/playbook run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/playbook", "run", "build" ]
+publicDir = "artifacts/playbook/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "20600"
+BASE_PATH = "/"
