@@ -1,7 +1,9 @@
-import { useGetDashboardStats, useListPlaybooks } from "@workspace/api-client-react";
+import { useGetDashboardStats, useListPlaybooks, useGetRecentGenerations } from "@workspace/api-client-react";
+import type { Generation } from "@workspace/api-client-react";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
 import { BookOpen, Mail, FileText, Pen, TrendingUp, Import } from "lucide-react";
 import { Link } from "wouter";
 import { formatDistanceToNow } from "date-fns";
@@ -41,11 +43,54 @@ function StatCard({
   );
 }
 
+const generationTypeLabel: Record<string, string> = {
+  email: "Email Generated",
+  script: "Script Generated",
+  edits: "Edit Suggestions",
+};
+
+const generationTypeIcon: Record<string, React.ComponentType<{ className?: string }>> = {
+  email: Mail,
+  script: FileText,
+  edits: Pen,
+};
+
+function GenerationItem({ gen }: { gen: Generation }) {
+  const label = generationTypeLabel[gen.type] ?? gen.type;
+  const Icon = generationTypeIcon[gen.type] ?? TrendingUp;
+  return (
+    <div
+      data-testid={`row-generation-${gen.id}`}
+      className="flex items-center gap-3 py-2.5"
+    >
+      <div className="w-7 h-7 rounded-sm bg-primary/10 flex items-center justify-center shrink-0">
+        <Icon className="w-3.5 h-3.5 text-primary" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          <p className="text-sm font-medium text-foreground">{label}</p>
+          {gen.company && (
+            <Badge variant="secondary" className="text-xs">{gen.company}</Badge>
+          )}
+        </div>
+        {gen.role && (
+          <p className="text-xs text-muted-foreground truncate">{gen.role}</p>
+        )}
+      </div>
+      <p className="text-xs text-muted-foreground shrink-0">
+        {formatDistanceToNow(new Date(gen.createdAt), { addSuffix: true })}
+      </p>
+    </div>
+  );
+}
+
 export default function Dashboard() {
   const { data: stats, isLoading: statsLoading } = useGetDashboardStats();
   const { data: playbooks, isLoading: playbooksLoading } = useListPlaybooks();
+  const { data: recentGenerations, isLoading: generationsLoading } = useGetRecentGenerations();
 
-  const recentPlaybooks = playbooks?.slice(0, 5) ?? [];
+  const recentPlaybooks = playbooks?.slice(0, 4) ?? [];
+  const activityFeed = recentGenerations?.slice(0, 8) ?? [];
 
   return (
     <div>
@@ -64,52 +109,81 @@ export default function Dashboard() {
           <StatCard label="Edit Requests" value={stats?.editsRequested} icon={Pen} isLoading={statsLoading} />
         </div>
 
-        {/* Recent playbooks */}
-        <Card>
-          <CardHeader className="pb-2 px-4 pt-4">
-            <CardTitle className="text-sm font-semibold text-foreground">Recent Playbooks</CardTitle>
-          </CardHeader>
-          <CardContent className="px-4 pb-4">
-            {playbooksLoading ? (
-              <div className="space-y-2">
-                {Array.from({ length: 3 }).map((_, i) => (
-                  <Skeleton key={i} className="h-10 w-full" />
-                ))}
-              </div>
-            ) : recentPlaybooks.length === 0 ? (
-              <div className="py-8 text-center" data-testid="text-empty-playbooks">
-                <p className="text-sm text-muted-foreground">No playbooks yet.</p>
-                <Link href="/playbooks" className="text-sm text-primary hover:underline mt-1 inline-block" data-testid="link-create-first-playbook">
-                  Create your first playbook →
-                </Link>
-              </div>
-            ) : (
-              <div className="divide-y divide-border">
-                {recentPlaybooks.map((pb) => (
-                  <Link
-                    key={pb.id}
-                    href={`/playbooks/${pb.id}`}
-                    data-testid={`row-playbook-${pb.id}`}
-                    className="flex items-center justify-between py-2.5 hover:bg-muted/50 -mx-1 px-1 rounded-sm transition-colors"
-                  >
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-foreground truncate">{pb.name}</p>
-                      <p className="text-xs text-muted-foreground">{pb.emailCount} emails analyzed</p>
-                    </div>
-                    <div className="text-right shrink-0 ml-3">
-                      {pb.qualityScore != null && (
-                        <span className="text-xs font-semibold text-primary">{pb.qualityScore}/10</span>
-                      )}
-                      <p className="text-xs text-muted-foreground">
-                        {formatDistanceToNow(new Date(pb.createdAt), { addSuffix: true })}
-                      </p>
-                    </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+          {/* Recent activity feed */}
+          <Card>
+            <CardHeader className="pb-2 px-4 pt-4">
+              <CardTitle className="text-sm font-semibold text-foreground">Recent Activity</CardTitle>
+            </CardHeader>
+            <CardContent className="px-4 pb-4">
+              {generationsLoading ? (
+                <div className="space-y-2">
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <Skeleton key={i} className="h-10 w-full" />
+                  ))}
+                </div>
+              ) : activityFeed.length === 0 ? (
+                <div className="py-6 text-center" data-testid="text-empty-activity">
+                  <p className="text-sm text-muted-foreground">No activity yet.</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Generate an email, script, or request edits to see activity here.</p>
+                </div>
+              ) : (
+                <div className="divide-y divide-border" data-testid="list-recent-activity">
+                  {activityFeed.map((gen) => (
+                    <GenerationItem key={gen.id} gen={gen} />
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Recent playbooks */}
+          <Card>
+            <CardHeader className="pb-2 px-4 pt-4">
+              <CardTitle className="text-sm font-semibold text-foreground">Recent Playbooks</CardTitle>
+            </CardHeader>
+            <CardContent className="px-4 pb-4">
+              {playbooksLoading ? (
+                <div className="space-y-2">
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <Skeleton key={i} className="h-10 w-full" />
+                  ))}
+                </div>
+              ) : recentPlaybooks.length === 0 ? (
+                <div className="py-6 text-center" data-testid="text-empty-playbooks">
+                  <p className="text-sm text-muted-foreground">No playbooks yet.</p>
+                  <Link href="/playbooks" className="text-sm text-primary hover:underline mt-1 inline-block" data-testid="link-create-first-playbook">
+                    Create your first playbook →
                   </Link>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                </div>
+              ) : (
+                <div className="divide-y divide-border">
+                  {recentPlaybooks.map((pb) => (
+                    <Link
+                      key={pb.id}
+                      href={`/playbooks/${pb.id}`}
+                      data-testid={`row-playbook-${pb.id}`}
+                      className="flex items-center justify-between py-2.5 hover:bg-muted/50 -mx-1 px-1 rounded-sm transition-colors"
+                    >
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-foreground truncate">{pb.name}</p>
+                        <p className="text-xs text-muted-foreground">{pb.emailCount} emails analyzed</p>
+                      </div>
+                      <div className="text-right shrink-0 ml-3">
+                        {pb.qualityScore != null && (
+                          <span className="text-xs font-semibold text-primary">{pb.qualityScore}/10</span>
+                        )}
+                        <p className="text-xs text-muted-foreground">
+                          {formatDistanceToNow(new Date(pb.createdAt), { addSuffix: true })}
+                        </p>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
 
         {/* Quick actions */}
         <Card>
