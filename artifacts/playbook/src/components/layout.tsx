@@ -9,6 +9,7 @@ import {
   ChevronRight,
   Building2,
   Users,
+  Wand2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -21,6 +22,7 @@ const mainNavItems = [
 const generatorNavItems = [
   { href: "/generate-email", label: "Email Generator", icon: Mail },
   { href: "/generate-script", label: "Script Generator", icon: FileText },
+  { href: "/script-builder", label: "Script Builder", icon: Wand2 },
   { href: "/suggest-edits", label: "Edit Suggestions", icon: Pen },
 ];
 

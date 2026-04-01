@@ -140,6 +140,18 @@ router.get("/companies/:id/notes", async (req, res) => {
       body: JSON.stringify(searchBody),
     });
     const data = await response.json();
+    // Strip HTML tags from note bodies to return plain text
+    if (data.results) {
+      data.results = data.results.map((note: any) => ({
+        ...note,
+        properties: {
+          ...note.properties,
+          hs_note_body: note.properties.hs_note_body
+            ? note.properties.hs_note_body.replace(/<[^>]*>/g, " ").replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&#\d+;/g, "").replace(/\s+/g, " ").trim()
+            : note.properties.hs_note_body,
+        },
+      }));
+    }
     res.json(data);
   } catch (err) {
     req.log.error({ err }, "Failed to fetch company notes");
@@ -484,6 +496,18 @@ router.get("/contacts/:id/notes", async (req, res) => {
       body: JSON.stringify(searchBody),
     });
     const data = await response.json();
+    // Strip HTML tags from note bodies to return plain text
+    if (data.results) {
+      data.results = data.results.map((note: any) => ({
+        ...note,
+        properties: {
+          ...note.properties,
+          hs_note_body: note.properties.hs_note_body
+            ? note.properties.hs_note_body.replace(/<[^>]*>/g, " ").replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&#\d+;/g, "").replace(/\s+/g, " ").trim()
+            : note.properties.hs_note_body,
+        },
+      }));
+    }
     res.json(data);
   } catch (err) {
     req.log.error({ err }, "Failed to fetch contact notes");

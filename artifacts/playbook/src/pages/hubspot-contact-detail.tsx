@@ -464,28 +464,25 @@ export default function HubSpotContactDetail() {
             <CardHeader className="pb-3">
               <CardTitle className="text-sm flex items-center gap-2">
                 <FileText className="w-4 h-4 text-primary" />
-                Notes & Activity
+                Recent Notes
                 {loadingNotes && <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />}
-                {!loadingNotes && <span className="text-muted-foreground font-normal">({notes.length})</span>}
+                {!loadingNotes && <span className="text-muted-foreground font-normal">(Last {notes.length})</span>}
               </CardTitle>
             </CardHeader>
             <CardContent>
               {notes.length === 0 && !loadingNotes && (
                 <p className="text-sm text-muted-foreground">No notes found for this contact.</p>
               )}
-              <div className="space-y-2">
-                {notes.map((note) => (
-                  <div key={note.id} className="flex gap-3 p-3 rounded-md bg-muted/20 border border-border">
-                    <div className="flex flex-col items-center gap-1 shrink-0">
-                      <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1" />
-                      <div className="w-px flex-1 bg-border" />
+              <div className="space-y-3">
+                {notes.map((note, idx) => (
+                  <div key={note.id} className="p-3 rounded-lg bg-muted/30 border border-border">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary/10 text-primary text-xs font-medium">{idx + 1}</span>
+                      <span className="text-xs font-medium text-muted-foreground">{formatDate(note.properties.hs_timestamp)}</span>
                     </div>
-                    <div className="min-w-0 flex-1 pb-1">
-                      <p className="text-xs text-muted-foreground mb-1">{formatDate(note.properties.hs_timestamp)}</p>
-                      <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">
-                        {note.properties.hs_note_body ?? "(empty note)"}
-                      </p>
-                    </div>
+                    <p className="text-sm text-foreground leading-relaxed">
+                      {note.properties.hs_note_body ?? "(empty note)"}
+                    </p>
                   </div>
                 ))}
               </div>

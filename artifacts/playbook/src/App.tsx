@@ -9,6 +9,7 @@ import PlaybookDetail from "@/pages/playbook-detail";
 import Import from "@/pages/import";
 import GenerateEmail from "@/pages/generate-email";
 import GenerateScript from "@/pages/generate-script";
+import ScriptBuilder from "@/pages/script-builder";
 import SuggestEdits from "@/pages/suggest-edits";
 import HubSpotCompanies from "@/pages/hubspot-companies";
 import HubSpotCompanyDetail from "@/pages/hubspot-company-detail";
@@ -28,6 +29,7 @@ function Router() {
         <Route path="/import" component={Import} />
         <Route path="/generate-email" component={GenerateEmail} />
         <Route path="/generate-script" component={GenerateScript} />
+        <Route path="/script-builder" component={ScriptBuilder} />
         <Route path="/suggest-edits" component={SuggestEdits} />
         <Route path="/hubspot/companies" component={HubSpotCompanies} />
         <Route path="/hubspot/companies/:id" component={HubSpotCompanyDetail} />
