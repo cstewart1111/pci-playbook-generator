@@ -9,6 +9,7 @@ import {
   ChevronRight,
   Building2,
   Users,
+  MapPin,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -30,6 +31,7 @@ const outreachNavItems = [
 const hubspotNavItems = [
   { href: "/hubspot/companies", label: "Accounts", icon: Building2 },
   { href: "/hubspot/contacts", label: "Contacts", icon: Users },
+  { href: "/travel", label: "Travel Planner", icon: MapPin },
 ];
 
 function NavGroup({ label, items }: { label: string; items: { href: string; label: string; icon: React.ComponentType<{ className?: string }> }[] }) {

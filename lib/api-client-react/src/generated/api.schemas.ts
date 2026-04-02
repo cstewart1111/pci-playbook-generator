@@ -42,6 +42,12 @@ export interface PlaybookWithPatterns {
 export interface CreatePlaybookBody {
   name: string;
   description: string;
+  icpVerticals?: string[];
+  icpPersonas?: string[];
+  icpPainPoints?: string[];
+  icpDifferentiators?: string[];
+  icpProofPoints?: string[];
+  icpCompanySize?: string | null;
 }
 
 export interface AnalyzeEmailsBody {
@@ -105,6 +111,35 @@ export interface GenerateScriptBody {
   playbookId?: number | null;
 }
 
+export interface GenerateScriptBuilderBody {
+  name?: string;
+  company?: string;
+  role?: string;
+  productType?: string;
+  scriptType?: string;
+  context?: string;
+  playbookId?: number | null;
+  notes?: string[];
+}
+
+export interface SocialProofMeta {
+  orgName: string;
+  orgType: string;
+  sizeTier: string;
+  region: string;
+  angle: string;
+  intensity: string;
+  matchReason: string;
+  orgId: string;
+  hasOHP: boolean;
+}
+
+export interface ScriptBuilderResult {
+  output: string;
+  generationId: number;
+  socialProof?: SocialProofMeta | null;
+}
+
 export interface SuggestEditsBody {
   draftEmail: string;
   playbookId?: number | null;
@@ -125,14 +160,15 @@ export interface ApiError {
 
 export interface KnowledgeDoc {
   id: number;
-  playbookId?: number | null;
   title: string;
   type: string;
   content: string;
   fileName?: string | null;
   fileType?: string | null;
   fileSize?: number | null;
+  playbookId?: number | null;
   createdAt: string;
+  updatedAt: string;
 }
 
 export interface CreateKnowledgeDocBody {
@@ -141,3 +177,81 @@ export interface CreateKnowledgeDocBody {
   content: string;
   playbookId?: number | null;
 }
+
+export interface MeetingSlot {
+  id: string;
+  address: string;
+  scheduledStartTime: string;
+  durationMinutes: number;
+  companyId?: string | null;
+  companyName?: string | null;
+  lat?: number | null;
+  lng?: number | null;
+}
+
+export type DirectionLegOrigin = {
+  address: string;
+  lat: number;
+  lng: number;
+};
+
+export type DirectionLegDestination = {
+  address: string;
+  lat: number;
+  lng: number;
+};
+
+export interface DirectionLeg {
+  origin: DirectionLegOrigin;
+  destination: DirectionLegDestination;
+  distanceMeters: number;
+  durationSeconds: number;
+  polyline?: string | null;
+}
+
+export type ItineraryHome = {
+  address: string;
+  lat: number;
+  lng: number;
+} | null;
+
+export interface Itinerary {
+  date: string;
+  home?: ItineraryHome;
+  meetings: MeetingSlot[];
+  totalDistanceMeters: number;
+  totalDurationSeconds: number;
+  directions: DirectionLeg[];
+}
+
+export interface ConfirmAddressBody {
+  rawAddress: string;
+  companyName?: string | null;
+}
+
+export interface AddressCandidate {
+  address: string;
+  lat: number;
+  lng: number;
+}
+
+export interface ConfirmAddressResult {
+  candidates: AddressCandidate[];
+}
+
+export type ListKnowledgeDocsParams = {
+  playbookId?: number;
+};
+
+export type UploadKnowledgeDocBody = {
+  file: Blob;
+  title: string;
+  type: string;
+  playbookId?: number;
+};
+
+export type OptimizeTravelParams = {
+  date?: string;
+  homeBase?: string;
+  seedAccountId?: string;
+};

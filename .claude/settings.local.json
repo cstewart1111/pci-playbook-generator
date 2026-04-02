@@ -44,7 +44,18 @@
       "Bash(jar xf:*)",
       "Bash(python3 -c \"import zipfile; zipfile.ZipFile\\('../pci-claude.zip'\\).extractall\\('.'\\)\")",
       "Bash(apt list:*)",
-      "Bash(npm init:*)"
+      "Bash(npm init:*)",
+      "Bash(chmod)",
+      "Bash(npx vite:*)",
+      "Bash(GOOGLE_MAPS_API_KEY=placeholder node --enable-source-maps ./dist/index.mjs)",
+      "Bash(PORT=3000 GOOGLE_MAPS_API_KEY=placeholder node --enable-source-maps ./dist/index.mjs)",
+      "Bash(echo \"EXIT: $?\")",
+      "Bash(PORT=3000 GOOGLE_MAPS_API_KEY=placeholder timeout 10 node --enable-source-maps dist/index.mjs)",
+      "Bash(echo \"EXIT $?\")",
+      "Bash(PORT=3000 GOOGLE_MAPS_API_KEY=placeholder node --enable-source-maps /home/runner/workspace/artifacts/api-server/dist/index.mjs)",
+      "Bash(disown)",
+      "Bash(setsid env:*)",
+      "Bash(echo \"Started PID: $!\" sleep 5 pgrep -f \"dist/index.mjs\")"
     ]
   }
 }

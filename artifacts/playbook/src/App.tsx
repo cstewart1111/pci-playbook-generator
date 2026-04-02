@@ -14,6 +14,7 @@ import HubSpotCompanies from "@/pages/hubspot-companies";
 import HubSpotCompanyDetail from "@/pages/hubspot-company-detail";
 import HubSpotContacts from "@/pages/hubspot-contacts";
 import HubSpotContactDetail from "@/pages/hubspot-contact-detail";
+import TravelPlanner from "@/pages/travel-planner";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient();
@@ -36,6 +37,7 @@ function Router() {
         <Route path="/hubspot/companies/:id" component={HubSpotCompanyDetail} />
         <Route path="/hubspot/contacts" component={HubSpotContacts} />
         <Route path="/hubspot/contacts/:id" component={HubSpotContactDetail} />
+        <Route path="/travel" component={TravelPlanner} />
         <Route component={NotFound} />
       </Switch>
     </Layout>

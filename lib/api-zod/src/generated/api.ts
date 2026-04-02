@@ -35,6 +35,12 @@ export const ListPlaybooksResponse = zod.array(ListPlaybooksResponseItem);
 export const CreatePlaybookBody = zod.object({
   name: zod.string(),
   description: zod.string(),
+  icpVerticals: zod.array(zod.string()).optional(),
+  icpPersonas: zod.array(zod.string()).optional(),
+  icpPainPoints: zod.array(zod.string()).optional(),
+  icpDifferentiators: zod.array(zod.string()).optional(),
+  icpProofPoints: zod.array(zod.string()).optional(),
+  icpCompanySize: zod.string().nullish(),
 });
 
 /**
@@ -145,6 +151,38 @@ export const GenerateScriptResponse = zod.object({
 });
 
 /**
+ * @summary Build personalized call scripts with social proof
+ */
+export const GenerateScriptBuilderBody = zod.object({
+  name: zod.string().optional(),
+  company: zod.string().optional(),
+  role: zod.string().optional(),
+  productType: zod.string().optional(),
+  scriptType: zod.string().optional(),
+  context: zod.string().optional(),
+  playbookId: zod.number().nullish(),
+  notes: zod.array(zod.string()).optional(),
+});
+
+export const GenerateScriptBuilderResponse = zod.object({
+  output: zod.string(),
+  generationId: zod.number(),
+  socialProof: zod
+    .object({
+      orgName: zod.string(),
+      orgType: zod.string(),
+      sizeTier: zod.string(),
+      region: zod.string(),
+      angle: zod.string(),
+      intensity: zod.string(),
+      matchReason: zod.string(),
+      orgId: zod.string(),
+      hasOHP: zod.boolean(),
+    })
+    .nullish(),
+});
+
+/**
  * @summary Suggest edits for a draft email
  */
 export const SuggestEditsBody = zod.object({
@@ -167,6 +205,145 @@ export const GetDashboardStatsResponse = zod.object({
   emailsGenerated: zod.number(),
   scriptsGenerated: zod.number(),
   editsRequested: zod.number(),
+});
+
+/**
+ * @summary List knowledge documents
+ */
+export const ListKnowledgeDocsQueryParams = zod.object({
+  playbookId: zod.coerce.number().optional(),
+});
+
+export const ListKnowledgeDocsResponseItem = zod.object({
+  id: zod.number(),
+  title: zod.string(),
+  type: zod.string(),
+  content: zod.string(),
+  fileName: zod.string().nullish(),
+  fileType: zod.string().nullish(),
+  fileSize: zod.number().nullish(),
+  playbookId: zod.number().nullish(),
+  createdAt: zod.coerce.date(),
+  updatedAt: zod.coerce.date(),
+});
+export const ListKnowledgeDocsResponse = zod.array(
+  ListKnowledgeDocsResponseItem,
+);
+
+/**
+ * @summary Create a knowledge document
+ */
+export const CreateKnowledgeDocBody = zod.object({
+  title: zod.string(),
+  type: zod.string(),
+  content: zod.string(),
+  playbookId: zod.number().nullish(),
+});
+
+/**
+ * @summary Upload a file as a knowledge document
+ */
+export const UploadKnowledgeDocBody = zod.object({
+  file: zod.instanceof(File),
+  title: zod.string(),
+  type: zod.string(),
+  playbookId: zod.number().optional(),
+});
+
+/**
+ * @summary Get a knowledge document
+ */
+export const GetKnowledgeDocParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetKnowledgeDocResponse = zod.object({
+  id: zod.number(),
+  title: zod.string(),
+  type: zod.string(),
+  content: zod.string(),
+  fileName: zod.string().nullish(),
+  fileType: zod.string().nullish(),
+  fileSize: zod.number().nullish(),
+  playbookId: zod.number().nullish(),
+  createdAt: zod.coerce.date(),
+  updatedAt: zod.coerce.date(),
+});
+
+/**
+ * @summary Delete a knowledge document
+ */
+export const DeleteKnowledgeDocParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+/**
+ * @summary Optimize travel itinerary for a given date
+ */
+export const OptimizeTravelQueryParams = zod.object({
+  date: zod.coerce.string().optional(),
+  homeBase: zod.coerce.string().optional(),
+  seedAccountId: zod.coerce.string().optional(),
+});
+
+export const OptimizeTravelResponse = zod.object({
+  date: zod.string(),
+  home: zod
+    .object({
+      address: zod.string(),
+      lat: zod.number(),
+      lng: zod.number(),
+    })
+    .nullish(),
+  meetings: zod.array(
+    zod.object({
+      id: zod.string(),
+      address: zod.string(),
+      scheduledStartTime: zod.coerce.date(),
+      durationMinutes: zod.number(),
+      companyId: zod.string().nullish(),
+      companyName: zod.string().nullish(),
+      lat: zod.number().nullish(),
+      lng: zod.number().nullish(),
+    }),
+  ),
+  totalDistanceMeters: zod.number(),
+  totalDurationSeconds: zod.number(),
+  directions: zod.array(
+    zod.object({
+      origin: zod.object({
+        address: zod.string(),
+        lat: zod.number(),
+        lng: zod.number(),
+      }),
+      destination: zod.object({
+        address: zod.string(),
+        lat: zod.number(),
+        lng: zod.number(),
+      }),
+      distanceMeters: zod.number(),
+      durationSeconds: zod.number(),
+      polyline: zod.string().nullish(),
+    }),
+  ),
+});
+
+/**
+ * @summary Confirm and normalize a raw address string
+ */
+export const ConfirmAddressBody = zod.object({
+  rawAddress: zod.string(),
+  companyName: zod.string().nullish(),
+});
+
+export const ConfirmAddressResponse = zod.object({
+  candidates: zod.array(
+    zod.object({
+      address: zod.string(),
+      lat: zod.number(),
+      lng: zod.number(),
+    }),
+  ),
 });
 
 /**

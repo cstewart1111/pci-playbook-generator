@@ -27,7 +27,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { OutputBox } from "@/components/output-box";
+import { OutputBox, type SocialProofMeta } from "@/components/output-box";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -135,6 +135,8 @@ export default function GenerateEmail() {
 
   const [output, setOutput] = useState<string | null>(null);
   const [generationId, setGenerationId] = useState<number | null>(null);
+  const [socialProof, setSocialProof] = useState<SocialProofMeta | null>(null);
+  const [skipProofOnNext, setSkipProofOnNext] = useState(false);
   const { toast } = useToast();
   const { data: playbooks } = useListPlaybooks();
 
@@ -155,12 +157,15 @@ export default function GenerateEmail() {
 
   const generateEmail = useGenerateEmail({
     mutation: {
-      onSuccess: (data) => {
+      onSuccess: (data: any) => {
         setOutput(data.output);
         setGenerationId(data.generationId);
+        setSocialProof(data.socialProof || null);
+        setSkipProofOnNext(false);
       },
       onError: () => {
         toast({ title: "Generation failed", description: "Please try again.", variant: "destructive" });
+        setSkipProofOnNext(false);
       },
     },
   });
@@ -168,6 +173,7 @@ export default function GenerateEmail() {
   const onSubmit = (values: FormValues) => {
     setOutput(null);
     setGenerationId(null);
+    setSocialProof(null);
     generateEmail.mutate({
       data: {
         name: values.name || "",
@@ -179,7 +185,8 @@ export default function GenerateEmail() {
         tone: (values.tone && values.tone !== "") ? values.tone as GenerateEmailBody["tone"] : undefined,
         context: values.context,
         playbookId: (values.playbookId && values.playbookId !== "none") ? Number(values.playbookId) : null,
-      },
+        ...(skipProofOnNext ? { skipSocialProof: true } : {}),
+      } as any,
     });
   };
 
@@ -433,6 +440,15 @@ export default function GenerateEmail() {
             content={output}
             label="Generated Email"
             generationId={generationId ?? undefined}
+            socialProof={socialProof}
+            onSwapProof={() => {
+              setSkipProofOnNext(false);
+              form.handleSubmit(onSubmit)();
+            }}
+            onRegenerateWithoutProof={() => {
+              setSkipProofOnNext(true);
+              setTimeout(() => form.handleSubmit(onSubmit)(), 0);
+            }}
             data-testid="section-email-output"
           />
         )}

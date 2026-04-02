@@ -269,7 +269,7 @@ function KnowledgeTab() {
         file: selectedFile,
         title: title.trim(),
         type,
-        playbookId: playbookId !== "global" ? Number(playbookId) : null,
+        playbookId: playbookId !== "global" ? Number(playbookId) : undefined,
       },
     });
   };

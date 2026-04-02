@@ -15,6 +15,10 @@ tags:
     description: AI generation operations
   - name: dashboard
     description: Dashboard summary data
+  - name: knowledge
+    description: Knowledge base document management
+  - name: travel
+    description: Travel optimization operations
 paths:
   /healthz:
     get:
@@ -190,6 +194,25 @@ paths:
               schema:
                 $ref: "#/components/schemas/GenerationResult"
 
+  /generations/script-builder:
+    post:
+      operationId: generateScriptBuilder
+      tags: [generations]
+      summary: Build personalized call scripts with social proof
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenerateScriptBuilderBody"
+      responses:
+        "200":
+          description: Generated script with social proof metadata
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScriptBuilderResult"
+
   /generations/suggest-edits:
     post:
       operationId: suggestEdits
@@ -221,6 +244,181 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/DashboardStats"
+
+  /knowledge:
+    get:
+      operationId: listKnowledgeDocs
+      tags: [knowledge]
+      summary: List knowledge documents
+      parameters:
+        - name: playbookId
+          in: query
+          required: false
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of knowledge documents
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/KnowledgeDoc"
+    post:
+      operationId: createKnowledgeDoc
+      tags: [knowledge]
+      summary: Create a knowledge document
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateKnowledgeDocBody"
+      responses:
+        "201":
+          description: Created knowledge document
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KnowledgeDoc"
+
+  /knowledge/upload:
+    post:
+      operationId: uploadKnowledgeDoc
+      tags: [knowledge]
+      summary: Upload a file as a knowledge document
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                title:
+                  type: string
+                type:
+                  type: string
+                playbookId:
+                  type: integer
+              required:
+                - file
+                - title
+                - type
+      responses:
+        "201":
+          description: Uploaded knowledge document
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KnowledgeDoc"
+
+  /knowledge/{id}:
+    get:
+      operationId: getKnowledgeDoc
+      tags: [knowledge]
+      summary: Get a knowledge document
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Knowledge document
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KnowledgeDoc"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+    delete:
+      operationId: deleteKnowledgeDoc
+      tags: [knowledge]
+      summary: Delete a knowledge document
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /travel/optimize-travel:
+    get:
+      operationId: optimizeTravel
+      tags: [travel]
+      summary: Optimize travel itinerary for a given date
+      parameters:
+        - name: date
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: homeBase
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: seedAccountId
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Optimized travel itinerary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Itinerary"
+        "404":
+          description: No meetings found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "400":
+          description: Geocoding error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /travel/confirm-address:
+    post:
+      operationId: confirmAddress
+      tags: [travel]
+      summary: Confirm and normalize a raw address string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConfirmAddressBody"
+      responses:
+        "200":
+          description: Address candidates
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConfirmAddressResult"
 
   /dashboard/recent-generations:
     get:
@@ -342,6 +540,29 @@ components:
           type: string
         description:
           type: string
+        icpVerticals:
+          type: array
+          items:
+            type: string
+        icpPersonas:
+          type: array
+          items:
+            type: string
+        icpPainPoints:
+          type: array
+          items:
+            type: string
+        icpDifferentiators:
+          type: array
+          items:
+            type: string
+        icpProofPoints:
+          type: array
+          items:
+            type: string
+        icpCompanySize:
+          type: string
+          nullable: true
       required:
         - name
         - description
@@ -477,6 +698,75 @@ components:
         - objective
         - context
 
+    GenerateScriptBuilderBody:
+      type: object
+      properties:
+        name:
+          type: string
+        company:
+          type: string
+        role:
+          type: string
+        productType:
+          type: string
+        scriptType:
+          type: string
+        context:
+          type: string
+        playbookId:
+          type: integer
+          nullable: true
+        notes:
+          type: array
+          items:
+            type: string
+
+    SocialProofMeta:
+      type: object
+      properties:
+        orgName:
+          type: string
+        orgType:
+          type: string
+        sizeTier:
+          type: string
+        region:
+          type: string
+        angle:
+          type: string
+        intensity:
+          type: string
+        matchReason:
+          type: string
+        orgId:
+          type: string
+        hasOHP:
+          type: boolean
+      required:
+        - orgName
+        - orgType
+        - sizeTier
+        - region
+        - angle
+        - intensity
+        - matchReason
+        - orgId
+        - hasOHP
+
+    ScriptBuilderResult:
+      type: object
+      properties:
+        output:
+          type: string
+        generationId:
+          type: integer
+        socialProof:
+          $ref: "#/components/schemas/SocialProofMeta"
+          nullable: true
+      required:
+        - output
+        - generationId
+
     SuggestEditsBody:
       type: object
       properties:
@@ -518,3 +808,202 @@ components:
           type: string
       required:
         - error
+
+    KnowledgeDoc:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        type:
+          type: string
+        content:
+          type: string
+        fileName:
+          type: string
+          nullable: true
+        fileType:
+          type: string
+          nullable: true
+        fileSize:
+          type: integer
+          nullable: true
+        playbookId:
+          type: integer
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - title
+        - type
+        - content
+        - createdAt
+        - updatedAt
+
+    CreateKnowledgeDocBody:
+      type: object
+      properties:
+        title:
+          type: string
+        type:
+          type: string
+        content:
+          type: string
+        playbookId:
+          type: integer
+          nullable: true
+      required:
+        - title
+        - type
+        - content
+
+    MeetingSlot:
+      type: object
+      properties:
+        id:
+          type: string
+        address:
+          type: string
+        scheduledStartTime:
+          type: string
+          format: date-time
+        durationMinutes:
+          type: number
+        companyId:
+          type: string
+          nullable: true
+        companyName:
+          type: string
+          nullable: true
+        lat:
+          type: number
+          nullable: true
+        lng:
+          type: number
+          nullable: true
+      required:
+        - id
+        - address
+        - scheduledStartTime
+        - durationMinutes
+
+    DirectionLeg:
+      type: object
+      properties:
+        origin:
+          type: object
+          properties:
+            address:
+              type: string
+            lat:
+              type: number
+            lng:
+              type: number
+          required:
+            - address
+            - lat
+            - lng
+        destination:
+          type: object
+          properties:
+            address:
+              type: string
+            lat:
+              type: number
+            lng:
+              type: number
+          required:
+            - address
+            - lat
+            - lng
+        distanceMeters:
+          type: number
+        durationSeconds:
+          type: number
+        polyline:
+          type: string
+          nullable: true
+      required:
+        - origin
+        - destination
+        - distanceMeters
+        - durationSeconds
+
+    Itinerary:
+      type: object
+      properties:
+        date:
+          type: string
+        home:
+          type: object
+          nullable: true
+          properties:
+            address:
+              type: string
+            lat:
+              type: number
+            lng:
+              type: number
+          required:
+            - address
+            - lat
+            - lng
+        meetings:
+          type: array
+          items:
+            $ref: "#/components/schemas/MeetingSlot"
+        totalDistanceMeters:
+          type: number
+        totalDurationSeconds:
+          type: number
+        directions:
+          type: array
+          items:
+            $ref: "#/components/schemas/DirectionLeg"
+      required:
+        - date
+        - meetings
+        - totalDistanceMeters
+        - totalDurationSeconds
+        - directions
+
+    ConfirmAddressBody:
+      type: object
+      properties:
+        rawAddress:
+          type: string
+        companyName:
+          type: string
+          nullable: true
+      required:
+        - rawAddress
+
+    AddressCandidate:
+      type: object
+      properties:
+        address:
+          type: string
+        lat:
+          type: number
+        lng:
+          type: number
+      required:
+        - address
+        - lat
+        - lng
+
+    ConfirmAddressResult:
+      type: object
+      properties:
+        candidates:
+          type: array
+          items:
+            $ref: "#/components/schemas/AddressCandidate"
+      required:
+        - candidates

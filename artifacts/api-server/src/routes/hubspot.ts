@@ -33,7 +33,7 @@ router.get("/companies", async (req, res) => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
-      const data = await response.json();
+      const data = await response.json() as any;
       res.json(data);
     } else {
       const params: Record<string, string> = {
@@ -57,10 +57,10 @@ router.get("/companies/:id", async (req, res) => {
       hubspotGet(`/crm/v3/objects/companies/${id}`, {
         properties: "name,domain,industry,city,country,state,numberofemployees,annualrevenue,description,phone,hs_lastmodifieddate,createdate",
       }),
-      hubspotGet(`/crm/v3/objects/companies/${id}/associations/contacts`, { limit: "100" }).catch(() => ({ results: [] })),
+      hubspotGet(`/crm/v3/objects/companies/${id}/associations/contacts`, { limit: "100" }).catch(() => ({ results: [] as any[] })),
     ]);
 
-    const contactIds: string[] = (associations?.results ?? []).map((a: { id: string }) => a.id);
+    const contactIds: string[] = ((associations as any)?.results ?? []).map((a: { id: string }) => a.id);
 
     let contacts: object[] = [];
     if (contactIds.length > 0) {
@@ -73,7 +73,7 @@ router.get("/companies/:id", async (req, res) => {
           properties: ["firstname", "lastname", "email", "jobtitle", "phone"],
         }),
       });
-      const batchData = await batchResp.json();
+      const batchData = await batchResp.json() as any;
       contacts = batchData?.results ?? [];
     }
 
@@ -108,7 +108,7 @@ router.get("/companies/:id/emails", async (req, res) => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(searchBody),
     });
-    const data = await response.json();
+    const data = await response.json() as any;
     res.json(data);
   } catch (err) {
     req.log.error({ err }, "Failed to fetch company emails");
@@ -139,7 +139,7 @@ router.get("/companies/:id/notes", async (req, res) => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(searchBody),
     });
-    const data = await response.json();
+    const data = await response.json() as any;
     // Strip HTML tags from note bodies to return plain text
     if (data.results) {
       data.results = data.results.map((note: any) => ({
@@ -187,7 +187,7 @@ router.get("/companies/:id/calls", async (req, res) => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(searchBody),
     });
-    const data = await response.json();
+    const data = await response.json() as any;
     // Strip HTML from call bodies
     if (data.results) {
       for (const call of data.results) {
@@ -244,7 +244,7 @@ router.post("/companies/search/filtered", async (req, res) => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     });
-    const data = await response.json();
+    const data = await response.json() as any;
     res.json(data);
   } catch (err) {
     req.log.error({ err }, "Failed to filter companies");
@@ -286,7 +286,7 @@ router.post("/contacts/search/filtered", async (req, res) => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     });
-    const data = await response.json();
+    const data = await response.json() as any;
     res.json(data);
   } catch (err) {
     req.log.error({ err }, "Failed to filter contacts");
@@ -396,7 +396,7 @@ router.get("/contacts", async (req, res) => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
-      const data = await response.json();
+      const data = await response.json() as any;
       res.json(data);
     } else {
       const params: Record<string, string> = {
@@ -420,10 +420,10 @@ router.get("/contacts/:id", async (req, res) => {
       hubspotGet(`/crm/v3/objects/contacts/${id}`, {
         properties: "firstname,lastname,email,jobtitle,company,phone,city,state,country,hs_lastmodifieddate,createdate,lifecyclestage,hs_lead_status",
       }),
-      hubspotGet(`/crm/v3/objects/contacts/${id}/associations/companies`, { limit: "10" }).catch(() => ({ results: [] })),
+      hubspotGet(`/crm/v3/objects/contacts/${id}/associations/companies`, { limit: "10" }).catch(() => ({ results: [] as any[] })),
     ]);
 
-    const companyIds: string[] = (associations?.results ?? []).map((a: { id: string }) => a.id);
+    const companyIds: string[] = ((associations as any)?.results ?? []).map((a: { id: string }) => a.id);
     let companies: object[] = [];
     if (companyIds.length > 0) {
       const connectors = getConnectors();
@@ -435,7 +435,7 @@ router.get("/contacts/:id", async (req, res) => {
           properties: ["name", "domain", "industry"],
         }),
       });
-      const batchData = await batchResp.json();
+      const batchData = await batchResp.json() as any;
       companies = batchData?.results ?? [];
     }
 
@@ -474,7 +474,7 @@ router.get("/contacts/:id/calls", async (req, res) => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(searchBody),
     });
-    const data = await response.json();
+    const data = await response.json() as any;
     // Strip HTML from call bodies
     if (data.results) {
       for (const call of data.results) {
@@ -517,7 +517,7 @@ router.get("/contacts/:id/notes", async (req, res) => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(searchBody),
     });
-    const data = await response.json();
+    const data = await response.json() as any;
     // Strip HTML tags from note bodies to return plain text
     if (data.results) {
       data.results = data.results.map((note: any) => ({
@@ -560,7 +560,7 @@ router.get("/contacts/:id/emails", async (req, res) => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(searchBody),
     });
-    const data = await response.json();
+    const data = await response.json() as any;
     res.json(data);
   } catch (err) {
     req.log.error({ err }, "Failed to fetch contact emails");
@@ -693,12 +693,12 @@ async function get90DayActivity(type: "company" | "contact", id: string, connect
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(emailSearch),
-    }).then(r => r.json()).catch(() => ({ results: [] })),
+    }).then(r => r.json() as any).catch(() => ({ results: [] })),
     noteSearch ? connectors.proxy("hubspot", "/crm/v3/objects/notes/search", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(noteSearch),
-    }).then(r => r.json()).catch(() => ({ results: [] })) : Promise.resolve({ results: [] }),
+    }).then(r => r.json() as any).catch(() => ({ results: [] })) : Promise.resolve({ results: [] }),
   ]);
 
   return {
@@ -751,7 +751,7 @@ router.post("/companies/:id/generate", async (req, res) => {
       get90DayActivity("company", id, connectors),
     ]);
 
-    const props = detail?.properties ?? {};
+    const props: Record<string, string> = (detail as any)?.properties ?? {};
     const goalLabel = GOAL_LABELS[goal] ?? goal;
     const activityText = formatActivityForPrompt(activity.emails, activity.notes);
     const contextBlock = context?.trim() ? `\nADDITIONAL CONTEXT FROM REP:\n${context.trim()}` : "";
@@ -860,7 +860,7 @@ router.post("/contacts/:id/generate", async (req, res) => {
       get90DayActivity("contact", id, connectors),
     ]);
 
-    const props = detail?.properties ?? {};
+    const props: Record<string, string> = (detail as any)?.properties ?? {};
     const fullName = [props.firstname, props.lastname].filter(Boolean).join(" ") || "this contact";
     const goalLabel = GOAL_LABELS[goal] ?? goal;
     const activityText = formatActivityForPrompt(activity.emails, activity.notes);

@@ -5,10 +5,16 @@
   "type": "module",
   "scripts": {
     "hello": "tsx ./src/hello.ts",
+    "travelAgent": "tsx ./src/claudeTravelAgent.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {
     "@types/node": "catalog:",
     "tsx": "catalog:"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.78.0",
+    "zod": "catalog:",
+    "node-fetch": "^3.3.1"
   }
 }

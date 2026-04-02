@@ -5,6 +5,7 @@ import generationsRouter from "./generations";
 import dashboardRouter from "./dashboard";
 import hubspotRouter from "./hubspot";
 import knowledgeRouter from "./knowledge";
+import travelRouter from "./travel";
 
 const router: IRouter = Router();
 
@@ -14,5 +15,6 @@ router.use("/generations", generationsRouter);
 router.use("/dashboard", dashboardRouter);
 router.use("/hubspot", hubspotRouter);
 router.use("/knowledge", knowledgeRouter);
+router.use("/travel", travelRouter);
 
 export default router;

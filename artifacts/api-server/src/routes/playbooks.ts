@@ -40,10 +40,10 @@ router.post("/", async (req, res) => {
         icpCompanySize: body.icpCompanySize || null,
       })
       .returning();
-    res.status(201).json(playbook);
+    return res.status(201).json(playbook);
   } catch (err) {
     req.log.error({ err }, "Failed to create playbook");
-    res.status(400).json({ error: "Failed to create playbook" });
+    return res.status(400).json({ error: "Failed to create playbook" });
   }
 });
 
@@ -55,13 +55,13 @@ router.get("/:id", async (req, res) => {
       return res.status(404).json({ error: "Playbook not found" });
     }
     const patternRows = await db.select().from(patterns).where(eq(patterns.playbookId, id));
-    res.json({
+    return res.json({
       ...playbook,
       patterns: patternRows,
     });
   } catch (err) {
     req.log.error({ err }, "Failed to get playbook");
-    res.status(500).json({ error: "Failed to get playbook" });
+    return res.status(500).json({ error: "Failed to get playbook" });
   }
 });
 
@@ -86,10 +86,10 @@ router.patch("/:id", async (req, res) => {
     if (!updated) {
       return res.status(404).json({ error: "Playbook not found" });
     }
-    res.json(updated);
+    return res.json(updated);
   } catch (err) {
     req.log.error({ err }, "Failed to update playbook");
-    res.status(500).json({ error: "Failed to update playbook" });
+    return res.status(500).json({ error: "Failed to update playbook" });
   }
 });
 
@@ -100,10 +100,10 @@ router.delete("/:id", async (req, res) => {
     if (!deleted) {
       return res.status(404).json({ error: "Playbook not found" });
     }
-    res.status(204).send();
+    return res.status(204).send();
   } catch (err) {
     req.log.error({ err }, "Failed to delete playbook");
-    res.status(500).json({ error: "Failed to delete playbook" });
+    return res.status(500).json({ error: "Failed to delete playbook" });
   }
 });
 
@@ -191,14 +191,14 @@ Return only valid JSON, no markdown.`,
       })
       .where(eq(playbooks.id, id));
 
-    res.json({
+    return res.json({
       patterns: analysis.patterns,
       principles: analysis.principles,
       qualityScore: analysis.qualityScore,
     });
   } catch (err) {
     req.log.error({ err }, "Failed to analyze emails");
-    res.status(500).json({ error: "Failed to analyze emails" });
+    return res.status(500).json({ error: "Failed to analyze emails" });
   }
 });
 

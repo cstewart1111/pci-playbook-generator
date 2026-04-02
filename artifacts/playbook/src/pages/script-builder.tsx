@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useSearch } from "wouter";
-import { useListPlaybooks, useGenerateScript } from "@workspace/api-client-react";
+import { useListPlaybooks, useGenerateScriptBuilder } from "@workspace/api-client-react";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,7 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { OutputBox } from "@/components/output-box";
+import { OutputBox, type SocialProofMeta } from "@/components/output-box";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 
@@ -121,14 +121,16 @@ export default function ScriptBuilder() {
   // Output
   const [output, setOutput] = useState<string | null>(null);
   const [generationId, setGenerationId] = useState<number | null>(null);
+  const [socialProof, setSocialProof] = useState<SocialProofMeta | null>(null);
 
   const searchString = useSearch();
 
-  const generateScript = useGenerateScript({
+  const generateScript = useGenerateScriptBuilder({
     mutation: {
-      onSuccess: (data) => {
+      onSuccess: (data: any) => {
         setOutput(data.output);
         setGenerationId(data.generationId);
+        setSocialProof(data.socialProof || null);
       },
       onError: () => {
         toast({ title: "Generation failed", description: "Please try again.", variant: "destructive" });
@@ -173,25 +175,27 @@ export default function ScriptBuilder() {
 
     setOutput(null);
     setGenerationId(null);
+    setSocialProof(null);
 
     const selectedProduct = productType && productType !== "none" ? productType : "";
-    const selectedScript = SCRIPT_TYPES.find(s => s.value === scriptType)?.label ?? scriptType;
     const resolvedPlaybookId = playbookId && playbookId !== "none" ? Number(playbookId) : null;
+    const resolvedRole = jobTitle && jobTitle !== "none" ? jobTitle : "";
 
-    const contextParts: string[] = [];
-    if (contactName) contextParts.push(`Contact: ${contactName}`);
-    if (company) contextParts.push(`Company: ${company}`);
-    if (jobTitle && jobTitle !== "none") contextParts.push(`Job Title: ${jobTitle}`);
-    if (selectedProduct) contextParts.push(`Product Type: ${selectedProduct}`);
-    contextParts.push(`Script Type: ${selectedScript}`);
-    if (notes.trim()) contextParts.push(`Notes: ${notes.trim()}`);
-    if (additionalContext.trim()) contextParts.push(additionalContext.trim());
+    // Build notes array from notes textarea (split on --- separator if present)
+    const notesList: string[] = notes.trim()
+      ? notes.split(/\n---\n/).filter(n => n.trim().length > 0)
+      : [];
 
     generateScript.mutate({
       data: {
-        objective: `${selectedScript} with ${contactName || company}`,
-        context: contextParts.join(". "),
+        name: contactName || undefined,
+        company: company || undefined,
+        role: resolvedRole || undefined,
+        productType: selectedProduct || undefined,
+        scriptType: scriptType || undefined,
+        context: additionalContext.trim() || undefined,
         playbookId: resolvedPlaybookId,
+        notes: notesList.length > 0 ? notesList : undefined,
       },
     });
   };
@@ -353,6 +357,9 @@ export default function ScriptBuilder() {
             content={output}
             label="Generated Script"
             generationId={generationId ?? undefined}
+            socialProof={socialProof}
+            onSwapProof={() => handleGenerate()}
+            onRegenerateWithoutProof={() => handleGenerate()}
             data-testid="section-script-output"
           />
         )}

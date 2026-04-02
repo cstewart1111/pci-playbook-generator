@@ -22,6 +22,182 @@ FORMATTING RULES - follow these exactly:
 - Output should paste cleanly into Outlook or HubSpot with no cleanup needed.
 `;
 
+const PCI_VOICE_RULES = `
+PCI VOICE AND TONE - follow these in every script:
+
+IDENTITY: Write as Colin Stewart, VP of Partnerships at PCI. Warm, direct, relationship-first, genuinely curious. In the industry since 2006. Talks like a trusted colleague, not a vendor.
+
+CALL BEST PRACTICES (derived from real PCI calls):
+1. Open warm and human. Small talk is not wasted time, it builds trust. "Happy Friday!" or a comment about the weather, tech issues, shared experiences. Then bridge naturally: "Maybe you can tell me about your role, and then I can share what we are doing."
+2. Ask permission before pitching. "Maybe the best way to walk you through this is..." or "I did not ask you any questions prior to that, so I am sorry about that, but I am curious..."
+3. Ask about their world first. Before positioning PCI, understand their current process: "What is your trigger point for bumping somebody up to an MGO?" or "How are you doing donor intelligence today?"
+4. Tell the story first, then the number. "We did this with Fordham, collected donor stories, and ended up generating over 2,000 planned giving leads" is better than "We generated 2,000 leads at Fordham." The story gives context that makes the number credible.
+5. Acknowledge before pivoting. When a prospect describes their current process, say "Gotcha, gotcha" or "Okay, okay" and ask a follow-up question. Never rebut their process directly.
+6. Use the settlers vs. pioneers framework. Longtime loyal donors (settlers) vs. passionate career-prime donors ready to escalate (pioneers). This frames PCI value around donor intelligence, not just data.
+7. Frame the close as a summary, not a new ask. "So that is kind of what we are talking about here..." then ask what they think. Low pressure.
+8. One proof story per call section, two max per full script. Social proof is a spice, not a sauce.
+
+PHRASES TO USE: "All the best", "It would mean a lot to me", "I am pumped about", "Reading the room correctly", "FWIW", "Quick question", "Worth a conversation?", "Gotcha", "Good deal"
+
+PHRASES TO NEVER USE: "I have been thinking about your...", "I wanted to reach out regarding...", "Leverage", "Unlock the power of", "In today's competitive landscape", "Transform your", "Best-in-class", "Cutting-edge", "State-of-the-art"
+
+DATA RESTRICTIONS: Never include PCI revenue figures. Never include postcard or email send counts. Membership/donor order counts and general dollar revenue references are acceptable.
+`;
+
+const SCRIPT_TYPE_TEMPLATES: Record<string, { sections: string; instructions: string }> = {
+  cold_call: {
+    sections: `OPENING:
+(A concise 30-second pattern-interrupt opener. Earn the right to a conversation.)
+
+DISCOVERY QUESTIONS:
+(4 to 6 specific probing questions, numbered. Focus on understanding their world before any pitch.)
+
+CORE MESSAGE:
+(Your value framing, 2 to 3 sentences. Connect to what you learned in discovery.)
+
+OBJECTION HANDLES:
+(3 to 4 common objections with responses, numbered. Acknowledge first, then pivot.)
+
+CLOSING:
+(Low-pressure next step. "Worth a quick conversation?" not "Schedule a demo.")`,
+    instructions: "This is a first-touch cold call. The prospect may not know who you are. Open with curiosity and warmth, not a pitch. Your only goal is to earn a second conversation.",
+  },
+  warm_call: {
+    sections: `OPENING:
+(Reference the prior touch: what they opened, replied to, or engaged with. Build on existing momentum.)
+
+DISCOVERY QUESTIONS:
+(4 to 6 questions that go deeper than the first touch. Reference what you already know.)
+
+CORE MESSAGE:
+(Value framing tied to their specific situation, 2 to 3 sentences.)
+
+OBJECTION HANDLES:
+(3 to 4 objections with responses, numbered.)
+
+CLOSING:
+(Propose a specific next step based on their engagement level.)`,
+    instructions: "This prospect has shown interest: they replied, opened an email, or engaged somehow. Build on that momentum. Reference the prior touch naturally.",
+  },
+  follow_up: {
+    sections: `OPENING:
+(Brief, reference the prior voicemail or email. Do not re-pitch.)
+
+BRIDGE:
+(One sentence connecting your prior outreach to a new angle or value point.)
+
+CORE MESSAGE:
+(Fresh value framing, 1 to 2 sentences. Bring something new.)
+
+CLOSING:
+(Simple next step. Keep it short.)`,
+    instructions: "You left a voicemail or sent an email. This is a follow-up touch. Be brief, bring a fresh angle, and do not repeat the original pitch word for word.",
+  },
+  gatekeeper: {
+    sections: `INTRO LINE:
+(Your name, company, and a confident reason for calling. Sound like you belong.)
+
+BRIDGE TO DECISION MAKER:
+(Ask for the right person by name if you have it. Give a brief, credible reason they will want to speak with you.)
+
+IF UNAVAILABLE:
+(Ask for the best time to reach them, or offer to leave a brief message.)
+
+BACKUP ASK:
+(If fully blocked, ask who handles alumni engagement or advancement partnerships.)`,
+    instructions: "You are calling and reached a front desk or assistant. Be confident, brief, and give a credible reason. Do not pitch the gatekeeper. Your goal is to reach the decision maker.",
+  },
+  voicemail: {
+    sections: `HOOK:
+(One sentence that creates curiosity. Name a similar organization or result.)
+
+VALUE:
+(One sentence on what you can do for them, tied to their role.)
+
+CALLBACK REASON:
+(One sentence giving them a reason to call back or expect your follow-up.)
+
+SIGN-OFF:
+(Your name, company, and phone number. Say the number slowly.)`,
+    instructions: "This is a voicemail drop. Keep it under 30 seconds total. One hook, one value point, one callback reason. Say your phone number clearly and slowly at the end.",
+  },
+  referral: {
+    sections: `OPENING:
+(Lead with the referral source. "So-and-so suggested I reach out" or "We just wrapped up a project with [similar org] and they mentioned you might be interested.")
+
+DISCOVERY QUESTIONS:
+(3 to 4 questions to understand their situation.)
+
+CORE MESSAGE:
+(Brief value framing, 1 to 2 sentences.)
+
+CLOSING:
+(Leverage the referral warmth for a specific next step.)`,
+    instructions: "You have a referral or introduction. Lead with the connection. This call has built-in credibility, so use it. Focus on learning about them rather than pitching.",
+  },
+  event_follow_up: {
+    sections: `OPENING:
+(Reference the event, conference, or meeting. Be specific about what you discussed or what session you attended.)
+
+BRIDGE:
+(Connect the event conversation to a specific value point.)
+
+DISCOVERY QUESTIONS:
+(3 to 4 questions that build on the event context.)
+
+CLOSING:
+(Propose a follow-up meeting to continue the conversation from the event.)`,
+    instructions: "You met this person at an event or conference. Reference specific details from the interaction. Build on the rapport already established.",
+  },
+  re_engagement: {
+    sections: `OPENING:
+(Acknowledge the gap without guilt-tripping. "It has been a while since we connected" not "I have not heard from you.")
+
+NEW VALUE:
+(Bring a fresh angle, trigger event, or new result. Something they have not heard before.)
+
+DISCOVERY QUESTIONS:
+(3 to 4 questions to understand what changed since you last spoke.)
+
+CLOSING:
+(Low-pressure. "If the timing is better now, I would love to reconnect." Not "Can we schedule a call?")`,
+    instructions: "This prospect went dark or the deal stalled. Bring a completely fresh angle. Do not rehash the old pitch. Acknowledge the gap, bring new value, and keep the pressure low.",
+  },
+  set_meeting: {
+    sections: `OPENING:
+(Brief context: why you are calling and what the meeting would cover.)
+
+REASON FOR MEETING:
+(2 to 3 sentences on what they will get out of the meeting. Make it about their benefit, not yours.)
+
+PROPOSED TIMES:
+(Offer 2 to 3 specific time slots. Make it easy to say yes.)
+
+IF HESITANT:
+(Address the most common reason for hesitation. "It is just 20 minutes" or "No commitment, just a look at what we found.")`,
+    instructions: "Your goal is to book a specific meeting (Zoom or onsite). Be direct, assume interest, and make it easy to say yes. Offer specific times.",
+  },
+};
+
+// Default template for unknown script types
+const DEFAULT_SCRIPT_TEMPLATE = {
+  sections: `OPENING:
+(A concise 30-second opener)
+
+DISCOVERY QUESTIONS:
+(4 to 6 specific probing questions, numbered)
+
+CORE MESSAGE:
+(Your value framing, 2 to 3 sentences)
+
+OBJECTION HANDLES:
+(3 to 4 common objections with responses, numbered)
+
+CLOSING:
+(The next step ask)`,
+  instructions: "Generate a structured, personalized call script.",
+};
+
 async function getPlaybookContext(playbookId?: number | null): Promise<string> {
   if (!playbookId) return "";
   const [playbook] = await db.select().from(playbooks).where(eq(playbooks.id, playbookId));
@@ -141,8 +317,11 @@ router.post("/email", async (req, res) => {
       getWinningPatternsContext(body.playbookId),
     ]);
 
-    // Social proof — optional context based on prospect company
-    const { context: socialProofContext, proofUsed } = getSocialProofContext(body.company || "");
+    // Social proof — optional context based on prospect company (can be skipped via request body)
+    const skipProof = (req.body as any).skipSocialProof === true;
+    const { context: socialProofContext, proofUsed } = skipProof
+      ? { context: "", proofUsed: null }
+      : getSocialProofContext(body.company || "");
 
     const toneInstructions: Record<string, string> = {
       professional: "Use a polished, formal tone. Be respectful, measured, and buttoned-up. Avoid slang or overly casual language.",
@@ -172,7 +351,8 @@ router.post("/email", async (req, res) => {
       messages: [
         {
           role: "user",
-          content: `You are an expert consultative enterprise sales writer. Generate a highly personalized, compelling sales email.
+          content: `You are Colin Stewart, VP of Partnerships at PCI (Publishing Concepts Inc). Generate a highly personalized, compelling sales email.
+${PCI_VOICE_RULES}
 ${playbookContext ? `\n${playbookContext}` : ""}${knowledgeContext}${winningContext}${socialProofContext}${toneDirective}
 
 Target Details:
@@ -242,7 +422,8 @@ router.post("/script", async (req, res) => {
       messages: [
         {
           role: "user",
-          content: `You are an expert consultative enterprise sales coach. Generate a structured call script.
+          content: `You are Colin Stewart, VP of Partnerships at PCI (Publishing Concepts Inc). Generate a structured call script.
+${PCI_VOICE_RULES}
 ${playbookContext ? `\n${playbookContext}` : ""}${knowledgeContext}
 
 Objective: ${body.objective}
@@ -338,45 +519,70 @@ router.post("/script-builder", async (req, res) => {
       ? `\nIMPORTANT: Tailor all scripts specifically to PCI's "${productType}" product. Use its value proposition, use cases, and differentiators throughout the scripts.`
       : "";
 
-    const DEAL_STAGES = [
-      {
-        stage: "Cold Outreach",
-        description: "First contact. No prior relationship or engagement. The prospect may not know who you are.",
-        tone: "Curiosity-driven, brief, pattern-interrupt opener. Focus on earning the right to a conversation.",
-      },
-      {
-        stage: "Discovery / Qualification",
-        description: "Initial interest shown. Need to qualify fit and uncover pain points.",
-        tone: "Question-heavy, consultative. Focus on understanding their world before pitching.",
-      },
-      {
-        stage: "Proposal / Evaluation",
-        description: "Active deal. Prospect is evaluating your solution against alternatives.",
-        tone: "Value-focused, specific to their stated needs. Reference prior conversations. Build urgency without pressure.",
-      },
-      {
-        stage: "Negotiation / Decision",
-        description: "Late-stage deal. Working on terms, pricing, or stakeholder buy-in.",
-        tone: "Confident, direct. Address remaining concerns. Help them sell internally. Reinforce ROI.",
-      },
-      {
-        stage: "Re-engagement / Stalled Deal",
-        description: "Previously engaged but went dark or deal stalled. Trying to revive the conversation.",
-        tone: "Low-pressure, new-value-driven. Bring a fresh angle or trigger event. Acknowledge the gap without guilt-tripping.",
-      },
-    ];
+    // Determine if we should generate a single script type or multi-stage
+    const template = SCRIPT_TYPE_TEMPLATES[scriptType] || null;
+    const isSingleType = template !== null && scriptType !== "cold_call";
 
-    const stageDescriptions = DEAL_STAGES.map((s, i) =>
-      `VARIATION ${i + 1} - ${s.stage}:\nScenario: ${s.description}\nTone: ${s.tone}`
-    ).join("\n\n");
+    // Build system message with static rules (enables prompt caching across calls)
+    const systemPrompt = `You are Colin Stewart, VP of Partnerships at PCI (Publishing Concepts Inc). Generate structured call scripts.
+${PCI_VOICE_RULES}
+${FORMATTING_RULES}`;
 
-    const message = await anthropic.messages.create({
-      model: "claude-sonnet-4-6",
-      max_tokens: 16384,
-      messages: [
+    let promptContent: string;
+
+    if (isSingleType && template) {
+      // Single script type mode — generate one targeted script
+      promptContent = `Generate a structured call script for this specific scenario.
+${playbookContext ? `\n${playbookContext}` : ""}${knowledgeContext}${winningContext}${socialProofContext}${objectionContext}
+${productInstruction}
+
+TARGET:
+${targetInfo}
+${notesSection}
+
+SCENARIO: ${template.instructions}
+
+Generate a single, complete call script using this exact structure:
+
+${template.sections}
+
+Be specific to the target and their context. Use any notes or history provided to personalize the script. Address the prospect by name when provided. Return only the script.`;
+    } else {
+      // Multi-stage mode — generate 5 deal stage variations
+      const DEAL_STAGES = [
         {
-          role: "user",
-          content: `You are an expert consultative enterprise sales coach at PCI (Publishing Concepts Inc). Generate 5 complete, structured call scripts tailored to the same prospect but adapted for different deal stages.
+          stage: "Cold Outreach",
+          description: "First contact. No prior relationship or engagement. The prospect may not know who you are.",
+          tone: "Curiosity-driven, brief, pattern-interrupt opener. Focus on earning the right to a conversation.",
+        },
+        {
+          stage: "Discovery / Qualification",
+          description: "Initial interest shown. Need to qualify fit and uncover pain points.",
+          tone: "Question-heavy, consultative. Focus on understanding their world before pitching.",
+        },
+        {
+          stage: "Proposal / Evaluation",
+          description: "Active deal. Prospect is evaluating your solution against alternatives.",
+          tone: "Value-focused, specific to their stated needs. Reference prior conversations. Build urgency without pressure.",
+        },
+        {
+          stage: "Negotiation / Decision",
+          description: "Late-stage deal. Working on terms, pricing, or stakeholder buy-in.",
+          tone: "Confident, direct. Address remaining concerns. Help them sell internally. Reinforce ROI.",
+        },
+        {
+          stage: "Re-engagement / Stalled Deal",
+          description: "Previously engaged but went dark or deal stalled. Trying to revive the conversation.",
+          tone: "Low-pressure, new-value-driven. Bring a fresh angle or trigger event. Acknowledge the gap without guilt-tripping.",
+        },
+      ];
+
+      const stageDescriptions = DEAL_STAGES.map((s, i) =>
+        `VARIATION ${i + 1} - ${s.stage}:\nScenario: ${s.description}\nTone: ${s.tone}`
+      ).join("\n\n");
+
+      promptContent = `You are Colin Stewart, VP of Partnerships at PCI (Publishing Concepts Inc). Generate 5 complete, structured call scripts tailored to the same prospect but adapted for different deal stages.
+${PCI_VOICE_RULES}
 ${playbookContext ? `\n${playbookContext}` : ""}${knowledgeContext}${winningContext}${socialProofContext}${objectionContext}
 ${productInstruction}
 
@@ -410,7 +616,16 @@ CLOSING:
 ===
 
 Be specific to the target and their context. Use any notes or history provided to personalize each script. Return only the scripts.
-${FORMATTING_RULES}`,
+${FORMATTING_RULES}`;
+    }
+
+    const message = await anthropic.messages.create({
+      model: "claude-sonnet-4-6",
+      max_tokens: isSingleType ? 8192 : 16384,
+      messages: [
+        {
+          role: "user",
+          content: promptContent,
         },
       ],
     });
@@ -476,10 +691,10 @@ router.patch("/:id/outcome", async (req, res) => {
     if (!updated) {
       return res.status(404).json({ error: "Generation not found" });
     }
-    res.json(updated);
+    return res.json(updated);
   } catch (err) {
     req.log.error({ err }, "Failed to update generation outcome");
-    res.status(500).json({ error: "Failed to update outcome" });
+    return res.status(500).json({ error: "Failed to update outcome" });
   }
 });
 
