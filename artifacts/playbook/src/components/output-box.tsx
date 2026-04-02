@@ -1,8 +1,7 @@
 import { useState } from "react";
-import { Copy, Check, Sparkles, Send, MessageCircle, Calendar, Trophy, XCircle, Clock } from "lucide-react";
+import { Copy, Check, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { useUpdateGenerationOutcome } from "@workspace/api-client-react";
 
 interface OutputBoxProps {
   content: string;
@@ -40,35 +39,13 @@ function renderContent(text: string) {
   return nodes;
 }
 
-const OUTCOME_OPTIONS = [
-  { value: "sent", label: "Sent", icon: Send, color: "text-blue-600 bg-blue-50 border-blue-200 hover:bg-blue-100" },
-  { value: "replied", label: "Got Reply", icon: MessageCircle, color: "text-green-600 bg-green-50 border-green-200 hover:bg-green-100" },
-  { value: "booked_meeting", label: "Booked Meeting", icon: Calendar, color: "text-purple-600 bg-purple-50 border-purple-200 hover:bg-purple-100" },
-  { value: "closed_won", label: "Closed Won", icon: Trophy, color: "text-yellow-600 bg-yellow-50 border-yellow-200 hover:bg-yellow-100" },
-  { value: "no_response", label: "No Response", icon: Clock, color: "text-gray-500 bg-gray-50 border-gray-200 hover:bg-gray-100" },
-  { value: "rejected", label: "Rejected", icon: XCircle, color: "text-red-500 bg-red-50 border-red-200 hover:bg-red-100" },
-];
-
-export function OutputBox({ content, label, className, generationId }: OutputBoxProps) {
+export function OutputBox({ content, label, className }: OutputBoxProps) {
   const [copied, setCopied] = useState(false);
-  const [selectedOutcome, setSelectedOutcome] = useState<string | null>(null);
-
-  const updateOutcome = useUpdateGenerationOutcome({
-    mutation: {
-      onSuccess: () => {},
-    },
-  });
 
   const handleCopy = () => {
     navigator.clipboard.writeText(content);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
-  };
-
-  const handleOutcome = (outcome: string) => {
-    if (!generationId) return;
-    setSelectedOutcome(outcome);
-    updateOutcome.mutate({ id: generationId, data: { outcome } });
   };
 
   return (
@@ -98,39 +75,6 @@ export function OutputBox({ content, label, className, generationId }: OutputBox
       >
         {renderContent(content)}
       </div>
-
-      {/* Feedback / Outcome Tracking */}
-      {generationId && (
-        <div className="px-4 py-3 bg-muted/30 border-t border-border">
-          <p className="text-xs font-medium text-muted-foreground mb-2">
-            Track outcome (helps improve future generations):
-          </p>
-          <div className="flex flex-wrap gap-1.5">
-            {OUTCOME_OPTIONS.map((opt) => {
-              const Icon = opt.icon;
-              const isSelected = selectedOutcome === opt.value;
-              return (
-                <button
-                  key={opt.value}
-                  onClick={() => handleOutcome(opt.value)}
-                  disabled={updateOutcome.isPending}
-                  data-testid={`button-outcome-${opt.value}`}
-                  className={cn(
-                    "inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium border transition-colors",
-                    isSelected
-                      ? `${opt.color} ring-2 ring-offset-1 ring-current`
-                      : `${opt.color} opacity-70 hover:opacity-100`
-                  )}
-                >
-                  <Icon className="w-3 h-3" />
-                  {opt.label}
-                  {isSelected && <Check className="w-3 h-3" />}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
     </div>
   );
 }

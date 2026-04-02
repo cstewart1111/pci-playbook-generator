@@ -8,6 +8,7 @@ import {
 } from "@workspace/api-zod";
 import { anthropic } from "@workspace/integrations-anthropic-ai";
 import { eq, desc, and, isNull, isNotNull } from "drizzle-orm";
+import { getSocialProofContext, getObjectionHandlesContext, type SocialProofResult } from "./social-proof";
 
 const router: IRouter = Router();
 
@@ -140,6 +141,9 @@ router.post("/email", async (req, res) => {
       getWinningPatternsContext(body.playbookId),
     ]);
 
+    // Social proof — optional context based on prospect company
+    const { context: socialProofContext, proofUsed } = getSocialProofContext(body.company || "");
+
     const toneInstructions: Record<string, string> = {
       professional: "Use a polished, formal tone. Be respectful, measured, and buttoned-up. Avoid slang or overly casual language.",
       conversational: "Write like a friendly colleague, not a salesperson. Keep it warm, natural, and approachable. Use contractions and simple language.",
@@ -169,7 +173,7 @@ router.post("/email", async (req, res) => {
         {
           role: "user",
           content: `You are an expert consultative enterprise sales writer. Generate a highly personalized, compelling sales email.
-${playbookContext ? `\n${playbookContext}` : ""}${knowledgeContext}${winningContext}${toneDirective}
+${playbookContext ? `\n${playbookContext}` : ""}${knowledgeContext}${winningContext}${socialProofContext}${toneDirective}
 
 Target Details:
 ${details}
@@ -203,7 +207,21 @@ ${FORMATTING_RULES}`,
       })
       .returning();
 
-    res.json({ output: content.text, generationId: generation.id });
+    res.json({
+      output: content.text,
+      generationId: generation.id,
+      socialProof: proofUsed ? {
+        orgName: proofUsed.org.name.replace(/ \d{4}$/, ""),
+        orgType: proofUsed.org.orgType,
+        sizeTier: proofUsed.org.sizeTier,
+        region: proofUsed.org.region,
+        angle: proofUsed.angle,
+        intensity: proofUsed.intensity,
+        matchReason: proofUsed.matchReason,
+        orgId: proofUsed.org.id,
+        hasOHP: proofUsed.org.hasOHP,
+      } : null,
+    });
   } catch (err) {
     req.log.error({ err }, "Failed to generate email");
     res.status(500).json({ error: "Failed to generate email" });
@@ -299,6 +317,10 @@ router.post("/script-builder", async (req, res) => {
       getWinningPatternsContext(playbookId),
     ]);
 
+    // Social proof for scripts — provide proof points for cold outreach and re-engagement stages
+    const { context: socialProofContext, proofUsed: scriptProofUsed } = getSocialProofContext(company, "cold_outreach");
+    const objectionContext = getObjectionHandlesContext(company);
+
     const targetInfo = [
       name ? `Name: ${name}` : null,
       company ? `Company: ${company}` : null,
@@ -355,7 +377,7 @@ router.post("/script-builder", async (req, res) => {
         {
           role: "user",
           content: `You are an expert consultative enterprise sales coach at PCI (Publishing Concepts Inc). Generate 5 complete, structured call scripts tailored to the same prospect but adapted for different deal stages.
-${playbookContext ? `\n${playbookContext}` : ""}${knowledgeContext}${winningContext}
+${playbookContext ? `\n${playbookContext}` : ""}${knowledgeContext}${winningContext}${socialProofContext}${objectionContext}
 ${productInstruction}
 
 TARGET:
@@ -407,7 +429,21 @@ ${FORMATTING_RULES}`,
       })
       .returning();
 
-    res.json({ output: content.text, generationId: generation.id });
+    res.json({
+      output: content.text,
+      generationId: generation.id,
+      socialProof: scriptProofUsed ? {
+        orgName: scriptProofUsed.org.name.replace(/ \d{4}$/, ""),
+        orgType: scriptProofUsed.org.orgType,
+        sizeTier: scriptProofUsed.org.sizeTier,
+        region: scriptProofUsed.org.region,
+        angle: scriptProofUsed.angle,
+        intensity: scriptProofUsed.intensity,
+        matchReason: scriptProofUsed.matchReason,
+        orgId: scriptProofUsed.org.id,
+        hasOHP: scriptProofUsed.org.hasOHP,
+      } : null,
+    });
   } catch (err) {
     req.log.error({ err }, "Failed to generate script variations");
     res.status(500).json({ error: "Failed to generate script variations" });
