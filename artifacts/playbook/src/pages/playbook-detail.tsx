@@ -1,15 +1,11 @@
-import { useState } from "react";
 import { useParams, Link, useLocation } from "wouter";
-import { useGetPlaybook, getGetPlaybookQueryKey, useUpdatePlaybook } from "@workspace/api-client-react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useGetPlaybook, getGetPlaybookQueryKey } from "@workspace/api-client-react";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, CheckCircle2, Tag, Target, Pencil, Save, X } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Tag } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
 function BackButton() {
@@ -55,210 +51,6 @@ const patternTypeColors: Record<string, string> = {
   closing: "bg-yellow-100 text-yellow-700",
 };
 
-function TagListEditor({
-  label,
-  values,
-  onChange,
-  placeholder,
-}: {
-  label: string;
-  values: string[];
-  onChange: (v: string[]) => void;
-  placeholder: string;
-}) {
-  const [input, setInput] = useState("");
-  const addTag = () => {
-    const trimmed = input.trim();
-    if (trimmed && !values.includes(trimmed)) {
-      onChange([...values, trimmed]);
-    }
-    setInput("");
-  };
-  return (
-    <div className="space-y-1.5">
-      <label className="text-xs font-medium text-muted-foreground">{label}</label>
-      <div className="flex gap-2">
-        <Input
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder={placeholder}
-          className="text-sm h-8"
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              e.preventDefault();
-              addTag();
-            }
-          }}
-        />
-        <Button type="button" size="sm" variant="outline" onClick={addTag} className="h-8 px-2 text-xs">
-          Add
-        </Button>
-      </div>
-      {values.length > 0 && (
-        <div className="flex flex-wrap gap-1">
-          {values.map((v, i) => (
-            <Badge key={i} variant="secondary" className="text-xs gap-1 pr-1">
-              {v}
-              <button
-                type="button"
-                onClick={() => onChange(values.filter((_, idx) => idx !== i))}
-                className="ml-0.5 hover:text-destructive"
-              >
-                <X className="w-3 h-3" />
-              </button>
-            </Badge>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function IcpProfile({ playbookId, playbook }: { playbookId: number; playbook: any }) {
-  const [editing, setEditing] = useState(false);
-  const [verticals, setVerticals] = useState<string[]>(playbook.icpVerticals || []);
-  const [personas, setPersonas] = useState<string[]>(playbook.icpPersonas || []);
-  const [painPoints, setPainPoints] = useState<string[]>(playbook.icpPainPoints || []);
-  const [differentiators, setDifferentiators] = useState<string[]>(playbook.icpDifferentiators || []);
-  const [proofPoints, setProofPoints] = useState<string[]>(playbook.icpProofPoints || []);
-  const [companySize, setCompanySize] = useState(playbook.icpCompanySize || "");
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
-
-  const updatePlaybook = useUpdatePlaybook({
-    mutation: {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: getGetPlaybookQueryKey(playbookId) });
-        setEditing(false);
-        toast({ title: "ICP Profile saved" });
-      },
-      onError: () => {
-        toast({ title: "Failed to save", variant: "destructive" });
-      },
-    },
-  });
-
-  const hasIcp = verticals.length > 0 || personas.length > 0 || painPoints.length > 0 ||
-    differentiators.length > 0 || proofPoints.length > 0 || companySize;
-
-  const handleSave = () => {
-    updatePlaybook.mutate({
-      id: playbookId,
-      data: {
-        icpVerticals: verticals,
-        icpPersonas: personas,
-        icpPainPoints: painPoints,
-        icpDifferentiators: differentiators,
-        icpProofPoints: proofPoints,
-        icpCompanySize: companySize || undefined,
-      },
-    });
-  };
-
-  const handleCancel = () => {
-    setVerticals(playbook.icpVerticals || []);
-    setPersonas(playbook.icpPersonas || []);
-    setPainPoints(playbook.icpPainPoints || []);
-    setDifferentiators(playbook.icpDifferentiators || []);
-    setProofPoints(playbook.icpProofPoints || []);
-    setCompanySize(playbook.icpCompanySize || "");
-    setEditing(false);
-  };
-
-  return (
-    <Card>
-      <CardHeader className="px-4 pt-4 pb-2">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-sm font-semibold flex items-center gap-2">
-            <Target className="w-4 h-4 text-primary" />
-            Ideal Customer Profile (ICP)
-          </CardTitle>
-          {!editing ? (
-            <Button variant="ghost" size="sm" onClick={() => setEditing(true)} className="h-7 px-2 text-xs gap-1">
-              <Pencil className="w-3 h-3" />
-              {hasIcp ? "Edit" : "Set Up"}
-            </Button>
-          ) : (
-            <div className="flex gap-1">
-              <Button variant="ghost" size="sm" onClick={handleCancel} className="h-7 px-2 text-xs gap-1">
-                <X className="w-3 h-3" />
-                Cancel
-              </Button>
-              <Button size="sm" onClick={handleSave} disabled={updatePlaybook.isPending} className="h-7 px-2 text-xs gap-1">
-                <Save className="w-3 h-3" />
-                Save
-              </Button>
-            </div>
-          )}
-        </div>
-      </CardHeader>
-      <CardContent className="px-4 pb-4">
-        {editing ? (
-          <div className="space-y-3">
-            <TagListEditor label="Target Verticals" values={verticals} onChange={setVerticals} placeholder="e.g. Healthcare, Financial Services" />
-            <TagListEditor label="Target Personas" values={personas} onChange={setPersonas} placeholder="e.g. VP of Sales, CRO, Revenue Leader" />
-            <TagListEditor label="Key Pain Points" values={painPoints} onChange={setPainPoints} placeholder="e.g. Pipeline visibility, Forecast accuracy" />
-            <TagListEditor label="Our Differentiators" values={differentiators} onChange={setDifferentiators} placeholder="e.g. Real-time analytics, 3x faster onboarding" />
-            <TagListEditor label="Proof Points" values={proofPoints} onChange={setProofPoints} placeholder="e.g. 40% increase in pipeline for Acme Corp" />
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground">Ideal Company Size</label>
-              <Input
-                value={companySize}
-                onChange={(e) => setCompanySize(e.target.value)}
-                placeholder="e.g. 200-2000 employees, $50M-$500M revenue"
-                className="text-sm h-8"
-              />
-            </div>
-          </div>
-        ) : hasIcp ? (
-          <div className="space-y-2">
-            {verticals.length > 0 && (
-              <div>
-                <p className="text-xs text-muted-foreground font-medium mb-1">Verticals</p>
-                <div className="flex flex-wrap gap-1">{verticals.map((v, i) => <Badge key={i} variant="secondary" className="text-xs">{v}</Badge>)}</div>
-              </div>
-            )}
-            {personas.length > 0 && (
-              <div>
-                <p className="text-xs text-muted-foreground font-medium mb-1">Personas</p>
-                <div className="flex flex-wrap gap-1">{personas.map((v, i) => <Badge key={i} variant="secondary" className="text-xs">{v}</Badge>)}</div>
-              </div>
-            )}
-            {painPoints.length > 0 && (
-              <div>
-                <p className="text-xs text-muted-foreground font-medium mb-1">Pain Points</p>
-                <div className="flex flex-wrap gap-1">{painPoints.map((v, i) => <Badge key={i} variant="outline" className="text-xs">{v}</Badge>)}</div>
-              </div>
-            )}
-            {differentiators.length > 0 && (
-              <div>
-                <p className="text-xs text-muted-foreground font-medium mb-1">Differentiators</p>
-                <div className="flex flex-wrap gap-1">{differentiators.map((v, i) => <Badge key={i} className="text-xs bg-green-100 text-green-700">{v}</Badge>)}</div>
-              </div>
-            )}
-            {proofPoints.length > 0 && (
-              <div>
-                <p className="text-xs text-muted-foreground font-medium mb-1">Proof Points</p>
-                <div className="flex flex-wrap gap-1">{proofPoints.map((v, i) => <Badge key={i} className="text-xs bg-blue-100 text-blue-700">{v}</Badge>)}</div>
-              </div>
-            )}
-            {companySize && (
-              <div>
-                <p className="text-xs text-muted-foreground font-medium mb-1">Company Size</p>
-                <p className="text-sm">{companySize}</p>
-              </div>
-            )}
-          </div>
-        ) : (
-          <p className="text-sm text-muted-foreground text-center py-2">
-            No ICP defined yet. Click "Set Up" to add target verticals, personas, pain points, and differentiators.
-          </p>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
-
 export default function PlaybookDetail() {
   const params = useParams<{ id: string }>();
   const id = Number(params.id);
@@ -289,7 +81,7 @@ export default function PlaybookDetail() {
         <div className="p-6">
           <p className="text-sm text-muted-foreground" data-testid="text-not-found">Playbook not found or failed to load.</p>
           <Link href="/playbooks" className="text-sm text-primary hover:underline mt-2 inline-block" data-testid="link-back-to-playbooks">
-            ← Back to Playbooks
+            Back to Playbooks
           </Link>
         </div>
       </div>
@@ -301,25 +93,16 @@ export default function PlaybookDetail() {
       <PageHeader
         title={playbook.name}
         description={playbook.description}
-        actions={
-          <BackButton />
-        }
+        actions={<BackButton />}
       />
 
       <div className="p-6 space-y-5">
-        {/* Summary */}
         <div className="flex items-center gap-4 flex-wrap">
-          <div
-            data-testid="text-email-count"
-            className="text-sm text-muted-foreground"
-          >
+          <div data-testid="text-email-count" className="text-sm text-muted-foreground">
             <span className="font-semibold text-foreground">{playbook.emailCount}</span> emails analyzed
           </div>
           {playbook.qualityScore != null && (
-            <div
-              data-testid="text-quality-score"
-              className="flex items-center gap-1 text-sm"
-            >
+            <div data-testid="text-quality-score" className="flex items-center gap-1 text-sm">
               <span className="font-semibold text-primary text-base">{playbook.qualityScore}</span>
               <span className="text-muted-foreground">/ 10 quality score</span>
             </div>
@@ -329,7 +112,6 @@ export default function PlaybookDetail() {
           </div>
         </div>
 
-        {/* Principles */}
         {playbook.principles && playbook.principles.length > 0 && (
           <Card>
             <CardHeader className="px-4 pt-4 pb-2">
@@ -357,10 +139,6 @@ export default function PlaybookDetail() {
           </Card>
         )}
 
-        {/* ICP Profile */}
-        <IcpProfile playbookId={playbook.id} playbook={playbook} />
-
-        {/* Patterns */}
         {playbook.patterns && playbook.patterns.length > 0 ? (
           <Card>
             <CardHeader className="px-4 pt-4 pb-2">
@@ -416,7 +194,6 @@ export default function PlaybookDetail() {
           </Card>
         )}
 
-        {/* Action buttons */}
         <ActionButtons playbookId={playbook.id} />
       </div>
     </div>
