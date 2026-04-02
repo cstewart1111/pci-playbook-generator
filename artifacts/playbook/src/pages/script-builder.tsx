@@ -288,7 +288,7 @@ export default function ScriptBuilder() {
                   <SelectTrigger data-testid="select-job-title">
                     <SelectValue placeholder="Select job title..." />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="max-h-60">
                     <SelectItem value="none">Not specified</SelectItem>
                     {JOB_TITLES.map((jt) => (
                       <SelectItem key={jt} value={jt}>

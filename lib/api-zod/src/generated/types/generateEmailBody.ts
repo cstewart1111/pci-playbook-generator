@@ -5,12 +5,16 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { GenerateEmailBodyTone } from "./generateEmailBodyTone";
 
 export interface GenerateEmailBody {
+  name: string;
   company: string;
   role: string;
+  productType: string;
   problemHypothesis: string;
   recentHook: string;
   context: string;
+  tone?: GenerateEmailBodyTone;
   playbookId?: number | null;
 }

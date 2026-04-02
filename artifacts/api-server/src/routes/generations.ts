@@ -140,6 +140,18 @@ router.post("/email", async (req, res) => {
       getWinningPatternsContext(body.playbookId),
     ]);
 
+    const toneInstructions: Record<string, string> = {
+      professional: "Use a polished, formal tone. Be respectful, measured, and buttoned-up. Avoid slang or overly casual language.",
+      conversational: "Write like a friendly colleague, not a salesperson. Keep it warm, natural, and approachable. Use contractions and simple language.",
+      bold: "Be direct and confident. Lead with a strong point of view. Use short, punchy sentences. Don't hedge or qualify excessively.",
+      empathetic: "Lead with understanding. Acknowledge the recipient's challenges before offering solutions. Be warm, supportive, and human.",
+      urgent: "Create a sense of timeliness. Emphasize what they risk by waiting. Be direct about why acting now matters, but avoid being pushy or manipulative.",
+    };
+
+    const toneDirective = body.tone && toneInstructions[body.tone]
+      ? `\nTONE: ${body.tone.charAt(0).toUpperCase() + body.tone.slice(1)}\n${toneInstructions[body.tone]}\n`
+      : "";
+
     const details = [
       body.name ? `Recipient Name: ${body.name}` : null,
       body.company ? `Company: ${body.company}` : null,
@@ -157,7 +169,7 @@ router.post("/email", async (req, res) => {
         {
           role: "user",
           content: `You are an expert consultative enterprise sales writer. Generate a highly personalized, compelling sales email.
-${playbookContext ? `\n${playbookContext}` : ""}${knowledgeContext}${winningContext}
+${playbookContext ? `\n${playbookContext}` : ""}${knowledgeContext}${winningContext}${toneDirective}
 
 Target Details:
 ${details}

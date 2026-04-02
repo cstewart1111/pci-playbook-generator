@@ -15,12 +15,6 @@ export interface Playbook {
   description: string;
   qualityScore?: number | null;
   emailCount: number;
-  icpVerticals: string[];
-  icpPersonas: string[];
-  icpPainPoints: string[];
-  icpDifferentiators: string[];
-  icpProofPoints: string[];
-  icpCompanySize?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -39,12 +33,6 @@ export interface PlaybookWithPatterns {
   description: string;
   qualityScore?: number | null;
   emailCount: number;
-  icpVerticals: string[];
-  icpPersonas: string[];
-  icpPainPoints: string[];
-  icpDifferentiators: string[];
-  icpProofPoints: string[];
-  icpCompanySize?: string | null;
   createdAt: string;
   updatedAt: string;
   patterns: Pattern[];
@@ -54,12 +42,6 @@ export interface PlaybookWithPatterns {
 export interface CreatePlaybookBody {
   name: string;
   description: string;
-  icpVerticals?: string[];
-  icpPersonas?: string[];
-  icpPainPoints?: string[];
-  icpDifferentiators?: string[];
-  icpProofPoints?: string[];
-  icpCompanySize?: string;
 }
 
 export interface AnalyzeEmailsBody {
@@ -85,40 +67,25 @@ export interface Generation {
   role?: string | null;
   output: string;
   playbookId?: number | null;
-  outcome?: string | null;
-  outcomeNotes?: string | null;
-  outcomeAt?: string | null;
   createdAt: string;
-}
-
-export interface KnowledgeDoc {
-  id: number;
-  playbookId?: number | null;
-  title: string;
-  type: string;
-  content: string;
-  fileName?: string | null;
-  fileType?: string | null;
-  fileSize?: number | null;
-  createdAt: string;
-}
-
-export interface CreateKnowledgeDocBody {
-  title: string;
-  type: string;
-  content: string;
-  playbookId?: number | null;
-}
-
-export interface UpdateOutcomeBody {
-  outcome: string;
-  outcomeNotes?: string;
 }
 
 export interface GenerationResult {
   output: string;
   generationId: number;
 }
+
+export type GenerateEmailBodyTone =
+  | (typeof GenerateEmailBodyTone)[keyof typeof GenerateEmailBodyTone]
+  | null;
+
+export const GenerateEmailBodyTone = {
+  professional: "professional",
+  conversational: "conversational",
+  bold: "bold",
+  empathetic: "empathetic",
+  urgent: "urgent",
+} as const;
 
 export interface GenerateEmailBody {
   name: string;
@@ -128,6 +95,7 @@ export interface GenerateEmailBody {
   problemHypothesis: string;
   recentHook: string;
   context: string;
+  tone?: GenerateEmailBodyTone;
   playbookId?: number | null;
 }
 

@@ -442,6 +442,15 @@ components:
           type: string
         context:
           type: string
+        tone:
+          type: string
+          enum:
+            - professional
+            - conversational
+            - bold
+            - empathetic
+            - urgent
+          nullable: true
         playbookId:
           type: integer
           nullable: true

@@ -3,6 +3,7 @@ import { useSearch } from "wouter";
 import {
   useListPlaybooks,
   useGenerateEmail,
+  type GenerateEmailBody,
 } from "@workspace/api-client-react";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -29,14 +30,58 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2 } from "lucide-react";
+import { Loader2, Briefcase, MessageCircle, Zap, Heart, Clock } from "lucide-react";
 import { parseSearch } from "@/lib/query-params";
+
+const TONES = [
+  { value: "professional", label: "Professional", icon: Briefcase, description: "Polished & formal" },
+  { value: "conversational", label: "Conversational", icon: MessageCircle, description: "Warm & friendly" },
+  { value: "bold", label: "Bold", icon: Zap, description: "Direct & confident" },
+  { value: "empathetic", label: "Empathetic", icon: Heart, description: "Understanding & human" },
+  { value: "urgent", label: "Urgent", icon: Clock, description: "Timely & action-driven" },
+] as const;
 
 const PRODUCT_TYPES = [
   "Pipeline Discovery",
   "Oral History",
   "Census & Directory",
   "Storycause/DXO",
+];
+
+const JOB_TITLES = [
+  // Higher Ed / Nonprofit
+  "President / CEO",
+  "Executive Director",
+  "VP of Advancement",
+  "Director of Advancement",
+  "VP of Development",
+  "Director of Development",
+  "VP of Alumni Relations",
+  "Director of Alumni Relations",
+  "VP of Marketing",
+  "Director of Marketing",
+  "Director of Communications",
+  "VP of Enrollment",
+  "Director of Enrollment",
+  "Director of Operations",
+  // Military / VFW / American Legion
+  "Post Commander",
+  "State Commander",
+  "Department Commander",
+  "Post Adjutant",
+  "State Adjutant",
+  "Department Adjutant",
+  "Post Quartermaster",
+  "Department Quartermaster",
+  "Service Officer",
+  "Membership Chair",
+  "Department Membership Director",
+  "Auxiliary President",
+  "District Commander",
+  "National Officer",
+  "Post Chaplain",
+  // General
+  "Other",
 ];
 
 const schema = z.object({
@@ -46,6 +91,7 @@ const schema = z.object({
   productType: z.string().optional(),
   problemHypothesis: z.string().optional(),
   recentHook: z.string().optional(),
+  tone: z.string().optional(),
   context: z.string().min(1, "Please provide at least some context to generate from"),
   playbookId: z.string().optional(),
 });
@@ -70,6 +116,7 @@ export default function GenerateEmail() {
       productType: "",
       problemHypothesis: "",
       recentHook: "",
+      tone: "",
       context: "",
       playbookId: defaultPlaybook,
     },
@@ -94,10 +141,11 @@ export default function GenerateEmail() {
       data: {
         name: values.name || "",
         company: values.company || "",
-        role: values.role || "",
+        role: (values.role && values.role !== "none") ? values.role : "",
         productType: (values.productType && values.productType !== "none") ? values.productType : "",
         problemHypothesis: values.problemHypothesis || "",
         recentHook: values.recentHook || "",
+        tone: (values.tone && values.tone !== "") ? values.tone as GenerateEmailBody["tone"] : undefined,
         context: values.context,
         playbookId: (values.playbookId && values.playbookId !== "none") ? Number(values.playbookId) : null,
       },
@@ -116,7 +164,8 @@ export default function GenerateEmail() {
           <CardContent className="p-4">
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {/* Row 1: Name + Company */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
                     name="name"
@@ -137,20 +186,7 @@ export default function GenerateEmail() {
                       <FormItem>
                         <FormLabel className="text-muted-foreground">Company <span className="text-xs">(optional)</span></FormLabel>
                         <FormControl>
-                          <Input placeholder="e.g. Acme Corp" data-testid="input-company" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="role"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-muted-foreground">Role <span className="text-xs">(optional)</span></FormLabel>
-                        <FormControl>
-                          <Input placeholder="e.g. VP of Sales" data-testid="input-role" {...field} />
+                          <Input placeholder="e.g. University of Texas" data-testid="input-company" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -158,7 +194,33 @@ export default function GenerateEmail() {
                   />
                 </div>
 
+                {/* Row 2: Job Title + Product Type */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="role"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-muted-foreground">Job Title <span className="text-xs">(optional)</span></FormLabel>
+                        <Select value={field.value} onValueChange={field.onChange}>
+                          <FormControl>
+                            <SelectTrigger data-testid="select-role">
+                              <SelectValue placeholder="Select job title..." />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent className="max-h-60">
+                            <SelectItem value="none">Not specified</SelectItem>
+                            {JOB_TITLES.map((jt) => (
+                              <SelectItem key={jt} value={jt}>
+                                {jt}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                   <FormField
                     control={form.control}
                     name="productType"
@@ -168,11 +230,11 @@ export default function GenerateEmail() {
                         <Select value={field.value} onValueChange={field.onChange}>
                           <FormControl>
                             <SelectTrigger data-testid="select-product-type">
-                              <SelectValue placeholder="Select a product type" />
+                              <SelectValue placeholder="Select a product..." />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="none">No product type</SelectItem>
+                            <SelectItem value="none">Not specified</SelectItem>
                             {PRODUCT_TYPES.map((pt) => (
                               <SelectItem key={pt} value={pt}>
                                 {pt}
@@ -184,32 +246,34 @@ export default function GenerateEmail() {
                       </FormItem>
                     )}
                   />
-                  <FormField
-                    control={form.control}
-                    name="playbookId"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-muted-foreground">Playbook <span className="text-xs">(optional)</span></FormLabel>
-                        <Select value={field.value} onValueChange={field.onChange}>
-                          <FormControl>
-                            <SelectTrigger data-testid="select-playbook">
-                              <SelectValue placeholder="Use no playbook" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="none">No playbook</SelectItem>
-                            {playbooks?.map((pb) => (
-                              <SelectItem key={pb.id} value={String(pb.id)} data-testid={`option-playbook-${pb.id}`}>
-                                {pb.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
                 </div>
+
+                {/* Row 3: Playbook */}
+                <FormField
+                  control={form.control}
+                  name="playbookId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-muted-foreground">Playbook <span className="text-xs">(optional)</span></FormLabel>
+                      <Select value={field.value} onValueChange={field.onChange}>
+                        <FormControl>
+                          <SelectTrigger data-testid="select-playbook">
+                            <SelectValue placeholder="No playbook" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="none">No playbook</SelectItem>
+                          {playbooks?.map((pb) => (
+                            <SelectItem key={pb.id} value={String(pb.id)} data-testid={`option-playbook-${pb.id}`}>
+                              {pb.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <FormField
@@ -248,6 +312,44 @@ export default function GenerateEmail() {
                     )}
                   />
                 </div>
+
+                <FormField
+                  control={form.control}
+                  name="tone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-muted-foreground">Tone <span className="text-xs">(optional)</span></FormLabel>
+                      <div className="flex flex-wrap gap-2">
+                        {TONES.map((t) => {
+                          const Icon = t.icon;
+                          const isSelected = field.value === t.value;
+                          return (
+                            <button
+                              key={t.value}
+                              type="button"
+                              data-testid={`tone-${t.value}`}
+                              onClick={() => field.onChange(isSelected ? "" : t.value)}
+                              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium border transition-colors ${
+                                isSelected
+                                  ? "bg-primary text-primary-foreground border-primary"
+                                  : "bg-background text-muted-foreground border-input hover:bg-accent hover:text-accent-foreground"
+                              }`}
+                            >
+                              <Icon className="w-3.5 h-3.5" />
+                              {t.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      {field.value && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {TONES.find((t) => t.value === field.value)?.description}
+                        </p>
+                      )}
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
                 <FormField
                   control={form.control}

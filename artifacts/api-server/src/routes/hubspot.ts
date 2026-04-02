@@ -188,6 +188,17 @@ router.get("/companies/:id/calls", async (req, res) => {
       body: JSON.stringify(searchBody),
     });
     const data = await response.json();
+    // Strip HTML from call bodies
+    if (data.results) {
+      for (const call of data.results) {
+        if (call.properties?.hs_call_body) {
+          call.properties.hs_call_body = call.properties.hs_call_body
+            .replace(/<[^>]*>/g, " ").replace(/&nbsp;/g, " ").replace(/&amp;/g, "&")
+            .replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&#\d+;/g, "")
+            .replace(/\s+/g, " ").trim();
+        }
+      }
+    }
     res.json(data);
   } catch (err) {
     req.log.error({ err }, "Failed to fetch company calls");
@@ -464,6 +475,17 @@ router.get("/contacts/:id/calls", async (req, res) => {
       body: JSON.stringify(searchBody),
     });
     const data = await response.json();
+    // Strip HTML from call bodies
+    if (data.results) {
+      for (const call of data.results) {
+        if (call.properties?.hs_call_body) {
+          call.properties.hs_call_body = call.properties.hs_call_body
+            .replace(/<[^>]*>/g, " ").replace(/&nbsp;/g, " ").replace(/&amp;/g, "&")
+            .replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&#\d+;/g, "")
+            .replace(/\s+/g, " ").trim();
+        }
+      }
+    }
     res.json(data);
   } catch (err) {
     req.log.error({ err }, "Failed to fetch contact calls");

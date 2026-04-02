@@ -13,6 +13,7 @@ export * from "./apiError";
 export * from "./createPlaybookBody";
 export * from "./dashboardStats";
 export * from "./generateEmailBody";
+export * from "./generateEmailBodyTone";
 export * from "./generateScriptBody";
 export * from "./generation";
 export * from "./generationResult";

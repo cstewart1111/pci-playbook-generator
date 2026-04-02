@@ -702,7 +702,7 @@ function AnalyzeTab({ defaultPlaybook }: { defaultPlaybook: string }) {
                     <SelectTrigger data-testid={`select-email-job-title-${i}`} className="text-sm">
                       <SelectValue placeholder="Select job title..." />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="max-h-60">
                       {JOB_TITLES.map((jt) => (
                         <SelectItem key={jt} value={jt}>
                           {jt}
