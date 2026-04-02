@@ -1018,3 +1018,338 @@ export function useGetRecentGenerations<
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+// ---- Knowledge Documents (manually maintained - not in OpenAPI spec) ----
+
+import type { KnowledgeDoc, CreateKnowledgeDocBody } from "./api.schemas";
+
+export const getListKnowledgeDocsUrl = (playbookId?: number | null) => {
+  const params = playbookId ? `?playbookId=${playbookId}` : "";
+  return `/api/knowledge${params}`;
+};
+
+export const listKnowledgeDocs = async (
+  playbookId?: number | null,
+  options?: RequestInit,
+): Promise<KnowledgeDoc[]> => {
+  return customFetch<KnowledgeDoc[]>(getListKnowledgeDocsUrl(playbookId), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListKnowledgeDocsQueryKey = (playbookId?: number | null) => {
+  return [`/api/knowledge`, playbookId] as const;
+};
+
+export const getListKnowledgeDocsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listKnowledgeDocs>>,
+  TError = ErrorType<unknown>,
+>(
+  playbookId?: number | null,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof listKnowledgeDocs>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const queryKey = options?.query?.queryKey ?? getListKnowledgeDocsQueryKey(playbookId);
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listKnowledgeDocs>>> = ({ signal }) =>
+    listKnowledgeDocs(playbookId, { signal, ...options?.request });
+  return {
+    queryKey,
+    queryFn,
+    ...options?.query,
+  } as UseQueryOptions<Awaited<ReturnType<typeof listKnowledgeDocs>>, TError, TData> & {
+    queryKey: QueryKey;
+  };
+};
+
+export function useListKnowledgeDocs<
+  TData = Awaited<ReturnType<typeof listKnowledgeDocs>>,
+  TError = ErrorType<unknown>,
+>(
+  playbookId?: number | null,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof listKnowledgeDocs>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> {
+  const queryOptions = getListKnowledgeDocsQueryOptions(playbookId, options);
+  return useQuery(queryOptions) as UseQueryResult<TData, TError>;
+}
+
+export const createKnowledgeDoc = async (
+  body: CreateKnowledgeDocBody,
+  options?: RequestInit,
+): Promise<KnowledgeDoc> => {
+  return customFetch<KnowledgeDoc>("/api/knowledge", {
+    ...options,
+    method: "POST",
+    body: JSON.stringify(body),
+    headers: { "Content-Type": "application/json", ...options?.headers },
+  });
+};
+
+export const getCreateKnowledgeDocMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createKnowledgeDoc>>,
+    TError,
+    { data: BodyType<CreateKnowledgeDocBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createKnowledgeDoc>>,
+  TError,
+  { data: BodyType<CreateKnowledgeDocBody> },
+  TContext
+> => {
+  const mutationKey = ["createKnowledgeDoc"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createKnowledgeDoc>>,
+    { data: BodyType<CreateKnowledgeDocBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+    return createKnowledgeDoc(data, requestOptions);
+  };
+  return { mutationFn, ...mutationOptions };
+};
+
+export const useCreateKnowledgeDoc = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createKnowledgeDoc>>,
+    TError,
+    { data: BodyType<CreateKnowledgeDocBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createKnowledgeDoc>>,
+  TError,
+  { data: BodyType<CreateKnowledgeDocBody> },
+  TContext
+> => {
+  return useMutation(getCreateKnowledgeDocMutationOptions(options));
+};
+
+export const deleteKnowledgeDoc = async (
+  id: number,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(`/api/knowledge/${id}`, {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteKnowledgeDocMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteKnowledgeDoc>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteKnowledgeDoc>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["deleteKnowledgeDoc"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteKnowledgeDoc>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+    return deleteKnowledgeDoc(id, requestOptions);
+  };
+  return { mutationFn, ...mutationOptions };
+};
+
+export const useDeleteKnowledgeDoc = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteKnowledgeDoc>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteKnowledgeDoc>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getDeleteKnowledgeDocMutationOptions(options));
+};
+
+// ---- Upload Knowledge Document (File) ----
+
+export interface UploadKnowledgeDocParams {
+  file: File;
+  title: string;
+  type: string;
+  playbookId?: number | null;
+}
+
+export const uploadKnowledgeDoc = async (
+  params: UploadKnowledgeDocParams,
+  options?: RequestInit,
+): Promise<KnowledgeDoc> => {
+  const formData = new FormData();
+  formData.append("file", params.file);
+  formData.append("title", params.title);
+  formData.append("type", params.type);
+  if (params.playbookId != null) {
+    formData.append("playbookId", String(params.playbookId));
+  }
+  return customFetch<KnowledgeDoc>("/api/knowledge/upload", {
+    ...options,
+    method: "POST",
+    body: formData,
+  });
+};
+
+export const getUploadKnowledgeDocMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof uploadKnowledgeDoc>>,
+    TError,
+    { data: UploadKnowledgeDocParams },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof uploadKnowledgeDoc>>,
+  TError,
+  { data: UploadKnowledgeDocParams },
+  TContext
+> => {
+  const mutationKey = ["uploadKnowledgeDoc"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof uploadKnowledgeDoc>>,
+    { data: UploadKnowledgeDocParams }
+  > = (props) => {
+    const { data } = props ?? {};
+    return uploadKnowledgeDoc(data, requestOptions);
+  };
+  return { mutationFn, ...mutationOptions };
+};
+
+export const useUploadKnowledgeDoc = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof uploadKnowledgeDoc>>,
+    TError,
+    { data: UploadKnowledgeDocParams },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof uploadKnowledgeDoc>>,
+  TError,
+  { data: UploadKnowledgeDocParams },
+  TContext
+> => {
+  return useMutation(getUploadKnowledgeDocMutationOptions(options));
+};
+
+// ---- Update Generation Outcome (manually maintained) ----
+
+export const updateGenerationOutcome = async (
+  id: number,
+  body: { outcome: string; outcomeNotes?: string },
+  options?: RequestInit,
+): Promise<unknown> => {
+  return customFetch(`/api/generations/${id}/outcome`, {
+    ...options,
+    method: "PATCH",
+    body: JSON.stringify(body),
+    headers: { "Content-Type": "application/json", ...options?.headers },
+  });
+};
+
+export const getUpdateGenerationOutcomeMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateGenerationOutcome>>,
+    TError,
+    { id: number; data: { outcome: string; outcomeNotes?: string } },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateGenerationOutcome>>,
+  TError,
+  { id: number; data: { outcome: string; outcomeNotes?: string } },
+  TContext
+> => {
+  const mutationKey = ["updateGenerationOutcome"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateGenerationOutcome>>,
+    { id: number; data: { outcome: string; outcomeNotes?: string } }
+  > = (props) => {
+    const { id, data } = props ?? {};
+    return updateGenerationOutcome(id, data, requestOptions);
+  };
+  return { mutationFn, ...mutationOptions };
+};
+
+export const useUpdateGenerationOutcome = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateGenerationOutcome>>,
+    TError,
+    { id: number; data: { outcome: string; outcomeNotes?: string } },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateGenerationOutcome>>,
+  TError,
+  { id: number; data: { outcome: string; outcomeNotes?: string } },
+  TContext
+> => {
+  return useMutation(getUpdateGenerationOutcomeMutationOptions(options));
+};

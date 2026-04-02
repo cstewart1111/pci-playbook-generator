@@ -122,3 +122,22 @@ export interface DashboardStats {
 export interface ApiError {
   error: string;
 }
+
+export interface KnowledgeDoc {
+  id: number;
+  playbookId?: number | null;
+  title: string;
+  type: string;
+  content: string;
+  fileName?: string | null;
+  fileType?: string | null;
+  fileSize?: number | null;
+  createdAt: string;
+}
+
+export interface CreateKnowledgeDocBody {
+  title: string;
+  type: string;
+  content: string;
+  playbookId?: number | null;
+}

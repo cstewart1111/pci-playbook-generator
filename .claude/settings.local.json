@@ -39,7 +39,12 @@
       "Bash(git stash:*)",
       "Bash(find . -name \"tsconfig.tsbuildinfo\" -delete)",
       "Bash(find /home/runner/workspace -name \"tsconfig.tsbuildinfo\" -delete)",
-      "Bash(netstat -tlnp)"
+      "Bash(netstat -tlnp)",
+      "Bash(mkdir -p pci-claude)",
+      "Bash(jar xf:*)",
+      "Bash(python3 -c \"import zipfile; zipfile.ZipFile\\('../pci-claude.zip'\\).extractall\\('.'\\)\")",
+      "Bash(apt list:*)",
+      "Bash(npm init:*)"
     ]
   }
 }

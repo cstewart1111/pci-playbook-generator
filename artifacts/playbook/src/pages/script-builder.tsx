@@ -9,60 +9,80 @@ import { Card, CardContent } from "@/components/ui/card";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { OutputBox } from "@/components/output-box";
 import { useToast } from "@/hooks/use-toast";
-import { getApiBaseUrl } from "@/lib/api-base";
 import { Loader2 } from "lucide-react";
 
-type ScriptMode = "single" | "variations";
-
-const STAGE_LABELS = [
-  "Cold Outreach",
-  "Discovery / Qualification",
-  "Proposal / Evaluation",
-  "Negotiation / Decision",
-  "Re-engagement / Stalled Deal",
-];
-
-const JOB_TITLES = [
-  // Higher Ed / Nonprofit
-  "President / CEO",
-  "Executive Director",
-  "VP of Advancement",
-  "Director of Advancement",
-  "VP of Development",
-  "Director of Development",
-  "VP of Alumni Relations",
-  "Director of Alumni Relations",
-  "VP of Marketing",
-  "Director of Marketing",
-  "Director of Communications",
-  "VP of Enrollment",
-  "Director of Enrollment",
-  "Director of Operations",
-  // Military / VFW / American Legion
-  "Post Commander",
-  "State Commander",
-  "Department Commander",
-  "Post Adjutant",
-  "State Adjutant",
-  "Department Adjutant",
-  "Post Quartermaster",
-  "Department Quartermaster",
-  "Service Officer",
-  "Membership Chair",
-  "Department Membership Director",
-  "Auxiliary President",
-  "District Commander",
-  "National Officer",
-  "Post Chaplain",
-  // General
-  "Other",
+const JOB_TITLE_GROUPS = [
+  {
+    label: "President / Executive",
+    titles: ["President / CEO", "Executive Director", "Chancellor", "Provost"],
+  },
+  {
+    label: "Vice President",
+    titles: [
+      "VP of Advancement",
+      "VP of Development",
+      "VP of Alumni Relations",
+      "VP of Marketing",
+      "VP of Enrollment",
+      "VP of Communications",
+    ],
+  },
+  {
+    label: "Director",
+    titles: [
+      "Director of Advancement",
+      "Director of Development",
+      "Director of Alumni Relations",
+      "Director of Marketing",
+      "Director of Communications",
+      "Director of Enrollment",
+      "Director of Operations",
+      "Director of Annual Giving",
+    ],
+  },
+  {
+    label: "Assistant / Associate Director",
+    titles: [
+      "Associate VP of Advancement",
+      "Assistant Director of Advancement",
+      "Assistant Director of Development",
+      "Assistant Director of Alumni Relations",
+      "Associate Director of Annual Giving",
+    ],
+  },
+  {
+    label: "Military / VFW / American Legion",
+    titles: [
+      "Post Commander",
+      "State Commander",
+      "Department Commander",
+      "District Commander",
+      "National Officer",
+      "Post Adjutant",
+      "State Adjutant",
+      "Department Adjutant",
+      "Post Quartermaster",
+      "Department Quartermaster",
+      "Service Officer",
+      "Membership Chair",
+      "Department Membership Director",
+      "Auxiliary President",
+      "Post Chaplain",
+    ],
+  },
+  {
+    label: "Other",
+    titles: ["Other"],
+  },
 ];
 
 const PRODUCT_TYPES = [
@@ -88,9 +108,6 @@ export default function ScriptBuilder() {
   const { toast } = useToast();
   const { data: playbooks } = useListPlaybooks();
 
-  // Script mode
-  const [scriptMode, setScriptMode] = useState<ScriptMode>("variations");
-
   // Form fields
   const [contactName, setContactName] = useState("");
   const [company, setCompany] = useState("");
@@ -98,34 +115,23 @@ export default function ScriptBuilder() {
   const [productType, setProductType] = useState("");
   const [scriptType, setScriptType] = useState("cold_call");
   const [playbookId, setPlaybookId] = useState("");
-
-  // Single script fields
-  const [objective, setObjective] = useState("");
-
-  // Shared
   const [additionalContext, setAdditionalContext] = useState("");
   const [notes, setNotes] = useState("");
 
   // Output
   const [output, setOutput] = useState<string | null>(null);
   const [generationId, setGenerationId] = useState<number | null>(null);
-  const [generating, setGenerating] = useState(false);
-  const [activeVariation, setActiveVariation] = useState(0);
 
-  const apiBase = getApiBaseUrl();
   const searchString = useSearch();
 
-  // Single script generation via the typed hook
-  const generateSingleScript = useGenerateScript({
+  const generateScript = useGenerateScript({
     mutation: {
       onSuccess: (data) => {
         setOutput(data.output);
         setGenerationId(data.generationId);
-        setGenerating(false);
       },
       onError: () => {
         toast({ title: "Generation failed", description: "Please try again.", variant: "destructive" });
-        setGenerating(false);
       },
     },
   });
@@ -155,7 +161,7 @@ export default function ScriptBuilder() {
     }
   }, [searchString]);
 
-  const handleGenerate = async () => {
+  const handleGenerate = () => {
     if (!contactName && !company) {
       toast({
         title: "Missing info",
@@ -165,69 +171,30 @@ export default function ScriptBuilder() {
       return;
     }
 
-    setGenerating(true);
     setOutput(null);
     setGenerationId(null);
-    setActiveVariation(0);
 
     const selectedProduct = productType && productType !== "none" ? productType : "";
     const selectedScript = SCRIPT_TYPES.find(s => s.value === scriptType)?.label ?? scriptType;
     const resolvedPlaybookId = playbookId && playbookId !== "none" ? Number(playbookId) : null;
 
-    if (scriptMode === "single") {
-      const contextParts: string[] = [];
-      if (contactName) contextParts.push(`Contact: ${contactName}`);
-      if (company) contextParts.push(`Company: ${company}`);
-      if (jobTitle && jobTitle !== "none") contextParts.push(`Job Title: ${jobTitle}`);
-      if (selectedProduct) contextParts.push(`Product Type: ${selectedProduct}`);
-      contextParts.push(`Script Type: ${selectedScript}`);
-      if (notes.trim()) contextParts.push(`Notes: ${notes.trim()}`);
-      if (additionalContext.trim()) contextParts.push(additionalContext.trim());
+    const contextParts: string[] = [];
+    if (contactName) contextParts.push(`Contact: ${contactName}`);
+    if (company) contextParts.push(`Company: ${company}`);
+    if (jobTitle && jobTitle !== "none") contextParts.push(`Job Title: ${jobTitle}`);
+    if (selectedProduct) contextParts.push(`Product Type: ${selectedProduct}`);
+    contextParts.push(`Script Type: ${selectedScript}`);
+    if (notes.trim()) contextParts.push(`Notes: ${notes.trim()}`);
+    if (additionalContext.trim()) contextParts.push(additionalContext.trim());
 
-      generateSingleScript.mutate({
-        data: {
-          objective: objective || `${selectedScript} with ${contactName || company}`,
-          context: contextParts.join(". "),
-          playbookId: resolvedPlaybookId,
-        },
-      });
-    } else {
-      try {
-        const resp = await fetch(`${apiBase}/generations/script-builder`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            name: contactName,
-            company,
-            role: jobTitle && jobTitle !== "none" ? jobTitle : "",
-            productType: selectedProduct,
-            scriptType: selectedScript,
-            notes: notes.trim() ? [notes.trim()] : [],
-            context: additionalContext || undefined,
-            playbookId: resolvedPlaybookId ?? undefined,
-          }),
-        });
-        const data = await resp.json();
-        if (!resp.ok) throw new Error(data.error || "Generation failed");
-        setOutput(data.output);
-        setGenerationId(data.generationId ?? null);
-      } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : "Please try again.";
-        toast({ title: "Generation failed", description: message, variant: "destructive" });
-      } finally {
-        setGenerating(false);
-      }
-    }
+    generateScript.mutate({
+      data: {
+        objective: `${selectedScript} with ${contactName || company}`,
+        context: contextParts.join(". "),
+        playbookId: resolvedPlaybookId,
+      },
+    });
   };
-
-  // Split output into 5 variations
-  const parseVariations = (text: string): string[] => {
-    const parts = text.split(/===\s*VARIATION\s+\d+[^=]*===/).filter((s) => s.trim());
-    if (parts.length >= 5) return parts.slice(0, 5);
-    return [text];
-  };
-
-  const variations = output ? parseVariations(output) : [];
 
   return (
     <div>
@@ -237,25 +204,6 @@ export default function ScriptBuilder() {
       />
 
       <div className="p-6 space-y-5 max-w-3xl">
-        {/* Script Mode Toggle */}
-        <div className="flex gap-2">
-          <Button
-            variant={scriptMode === "single" ? "default" : "outline"}
-            size="sm"
-            onClick={() => setScriptMode("single")}
-          >
-            Quick Script
-          </Button>
-          <Button
-            variant={scriptMode === "variations" ? "default" : "outline"}
-            size="sm"
-            onClick={() => setScriptMode("variations")}
-          >
-            Full Playbook (5 Variations)
-          </Button>
-        </div>
-
-        {/* Main Form */}
         <Card>
           <CardContent className="p-4 space-y-4">
             {/* Row 1: Contact Name + Company */}
@@ -290,10 +238,17 @@ export default function ScriptBuilder() {
                   </SelectTrigger>
                   <SelectContent className="max-h-60">
                     <SelectItem value="none">Not specified</SelectItem>
-                    {JOB_TITLES.map((jt) => (
-                      <SelectItem key={jt} value={jt}>
-                        {jt}
-                      </SelectItem>
+                    {JOB_TITLE_GROUPS.map((group) => (
+                      <SelectGroup key={group.label}>
+                        <SelectLabel className="text-xs font-semibold text-muted-foreground px-2 pt-2">
+                          {group.label}
+                        </SelectLabel>
+                        {group.titles.map((title) => (
+                          <SelectItem key={title} value={title}>
+                            {title}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
                     ))}
                   </SelectContent>
                 </Select>
@@ -351,20 +306,6 @@ export default function ScriptBuilder() {
               </div>
             </div>
 
-            {/* Objective (quick script only) */}
-            {scriptMode === "single" && (
-              <div className="space-y-1.5">
-                <Label className="text-sm">Call Objective</Label>
-                <Textarea
-                  placeholder="e.g. Book a discovery call to understand their alumni engagement challenges"
-                  rows={2}
-                  value={objective}
-                  onChange={(e) => setObjective(e.target.value)}
-                  data-testid="input-objective"
-                />
-              </div>
-            )}
-
             {/* Notes */}
             <div className="space-y-1.5">
               <Label className="text-sm text-muted-foreground">Notes <span className="text-xs">(optional)</span></Label>
@@ -391,50 +332,23 @@ export default function ScriptBuilder() {
 
             <Button
               onClick={handleGenerate}
-              disabled={generating || generateSingleScript.isPending}
+              disabled={generateScript.isPending}
               className="w-full"
               data-testid="button-generate-script"
             >
-              {generating || generateSingleScript.isPending ? (
+              {generateScript.isPending ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  {scriptMode === "single" ? "Generating Script..." : "Generating 5 Script Variations..."}
+                  Generating Script...
                 </>
-              ) : scriptMode === "single" ? (
-                "Generate Script"
               ) : (
-                "Generate 5 Script Variations"
+                "Generate Script"
               )}
             </Button>
           </CardContent>
         </Card>
 
-        {/* Output: Tabbed Variations */}
-        {output && scriptMode === "variations" && variations.length > 1 && (
-          <div className="space-y-3">
-            <div className="flex gap-1 flex-wrap">
-              {STAGE_LABELS.map((label, i) => (
-                <Button
-                  key={i}
-                  variant={activeVariation === i ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setActiveVariation(i)}
-                  className="text-xs"
-                >
-                  {i + 1}. {label}
-                </Button>
-              ))}
-            </div>
-            <OutputBox
-              content={variations[activeVariation]?.trim() ?? ""}
-              label={`Script - ${STAGE_LABELS[activeVariation]}`}
-              generationId={generationId ?? undefined}
-            />
-          </div>
-        )}
-
-        {/* Single script output or fallback */}
-        {output && (scriptMode === "single" || variations.length === 1) && !(scriptMode === "variations" && variations.length > 1) && (
+        {output && (
           <OutputBox
             content={output}
             label="Generated Script"

@@ -13,7 +13,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
@@ -48,40 +50,69 @@ const PRODUCT_TYPES = [
   "Storycause/DXO",
 ];
 
-const JOB_TITLES = [
-  // Higher Ed / Nonprofit
-  "President / CEO",
-  "Executive Director",
-  "VP of Advancement",
-  "Director of Advancement",
-  "VP of Development",
-  "Director of Development",
-  "VP of Alumni Relations",
-  "Director of Alumni Relations",
-  "VP of Marketing",
-  "Director of Marketing",
-  "Director of Communications",
-  "VP of Enrollment",
-  "Director of Enrollment",
-  "Director of Operations",
-  // Military / VFW / American Legion
-  "Post Commander",
-  "State Commander",
-  "Department Commander",
-  "Post Adjutant",
-  "State Adjutant",
-  "Department Adjutant",
-  "Post Quartermaster",
-  "Department Quartermaster",
-  "Service Officer",
-  "Membership Chair",
-  "Department Membership Director",
-  "Auxiliary President",
-  "District Commander",
-  "National Officer",
-  "Post Chaplain",
-  // General
-  "Other",
+const JOB_TITLE_GROUPS = [
+  {
+    label: "President / Executive",
+    titles: ["President / CEO", "Executive Director", "Chancellor", "Provost"],
+  },
+  {
+    label: "Vice President",
+    titles: [
+      "VP of Advancement",
+      "VP of Development",
+      "VP of Alumni Relations",
+      "VP of Marketing",
+      "VP of Enrollment",
+      "VP of Communications",
+    ],
+  },
+  {
+    label: "Director",
+    titles: [
+      "Director of Advancement",
+      "Director of Development",
+      "Director of Alumni Relations",
+      "Director of Marketing",
+      "Director of Communications",
+      "Director of Enrollment",
+      "Director of Operations",
+      "Director of Annual Giving",
+    ],
+  },
+  {
+    label: "Assistant / Associate Director",
+    titles: [
+      "Associate VP of Advancement",
+      "Assistant Director of Advancement",
+      "Assistant Director of Development",
+      "Assistant Director of Alumni Relations",
+      "Associate Director of Annual Giving",
+    ],
+  },
+  {
+    label: "Military / VFW / American Legion",
+    titles: [
+      "Post Commander",
+      "State Commander",
+      "Department Commander",
+      "District Commander",
+      "National Officer",
+      "Post Adjutant",
+      "State Adjutant",
+      "Department Adjutant",
+      "Post Quartermaster",
+      "Department Quartermaster",
+      "Service Officer",
+      "Membership Chair",
+      "Department Membership Director",
+      "Auxiliary President",
+      "Post Chaplain",
+    ],
+  },
+  {
+    label: "Other",
+    titles: ["Other"],
+  },
 ];
 
 const schema = z.object({
@@ -210,10 +241,17 @@ export default function GenerateEmail() {
                           </FormControl>
                           <SelectContent className="max-h-60">
                             <SelectItem value="none">Not specified</SelectItem>
-                            {JOB_TITLES.map((jt) => (
-                              <SelectItem key={jt} value={jt}>
-                                {jt}
-                              </SelectItem>
+                            {JOB_TITLE_GROUPS.map((group) => (
+                              <SelectGroup key={group.label}>
+                                <SelectLabel className="text-xs font-semibold text-muted-foreground px-2 pt-2">
+                                  {group.label}
+                                </SelectLabel>
+                                {group.titles.map((title) => (
+                                  <SelectItem key={title} value={title}>
+                                    {title}
+                                  </SelectItem>
+                                ))}
+                              </SelectGroup>
                             ))}
                           </SelectContent>
                         </Select>
