@@ -2,28 +2,29 @@ import { Link, useLocation } from "wouter";
 import {
   LayoutDashboard,
   BookOpen,
+  BookMarked,
   Mail,
-  FileText,
-  Pen,
-  Import,
+  Phone,
+  Sparkles,
   ChevronRight,
   Building2,
   Users,
-  Wand2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const mainNavItems = [
+const homeNavItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/playbooks", label: "Playbooks", icon: BookOpen },
-  { href: "/import", label: "Import & Analyze", icon: Import },
 ];
 
-const generatorNavItems = [
-  { href: "/generate-email", label: "Email Generator", icon: Mail },
-  { href: "/generate-script", label: "Script Generator", icon: FileText },
-  { href: "/script-builder", label: "Script Builder", icon: Wand2 },
-  { href: "/suggest-edits", label: "Edit Suggestions", icon: Pen },
+const playbookNavItems = [
+  { href: "/playbooks", label: "Playbooks", icon: BookMarked },
+  { href: "/intel-hub", label: "Knowledge Base", icon: BookOpen },
+];
+
+const outreachNavItems = [
+  { href: "/generate-email", label: "Email Writer", icon: Mail },
+  { href: "/script-builder", label: "Script Builder", icon: Phone },
+  { href: "/suggest-edits", label: "Edit Coach", icon: Sparkles },
 ];
 
 const hubspotNavItems = [
@@ -70,19 +71,20 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <ChevronRight className="w-4 h-4 text-primary-foreground" />
           </div>
           <span className="text-sidebar-foreground font-semibold text-sm tracking-tight leading-tight">
-            Playbook<br />
-            <span className="font-normal text-sidebar-foreground/60">Generator</span>
+            PCI AI<br />
+            <span className="font-normal text-sidebar-foreground/60">Playmaker</span>
           </span>
         </div>
 
         <nav className="flex-1 px-2 py-3 space-y-1 overflow-y-auto">
-          <NavGroup label="Overview" items={mainNavItems} />
-          <NavGroup label="Generators" items={generatorNavItems} />
+          <NavGroup label="Home" items={homeNavItems} />
+          <NavGroup label="Playbooks" items={playbookNavItems} />
+          <NavGroup label="Outreach" items={outreachNavItems} />
           <NavGroup label="HubSpot CRM" items={hubspotNavItems} />
         </nav>
 
         <div className="px-4 py-3 border-t border-sidebar-border">
-          <p className="text-xs text-sidebar-foreground/40">Consultative Sales AI</p>
+          <p className="text-xs text-sidebar-foreground/40">PCI AI Playmaker</p>
         </div>
       </aside>
 

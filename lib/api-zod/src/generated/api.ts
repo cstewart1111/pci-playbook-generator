@@ -24,6 +24,12 @@ export const ListPlaybooksResponseItem = zod.object({
   description: zod.string(),
   qualityScore: zod.number().nullish(),
   emailCount: zod.number(),
+  icpVerticals: zod.array(zod.string()),
+  icpPersonas: zod.array(zod.string()),
+  icpPainPoints: zod.array(zod.string()),
+  icpDifferentiators: zod.array(zod.string()),
+  icpProofPoints: zod.array(zod.string()),
+  icpCompanySize: zod.string().nullish(),
   createdAt: zod.coerce.date(),
   updatedAt: zod.coerce.date(),
 });
@@ -35,6 +41,12 @@ export const ListPlaybooksResponse = zod.array(ListPlaybooksResponseItem);
 export const CreatePlaybookBody = zod.object({
   name: zod.string(),
   description: zod.string(),
+  icpVerticals: zod.array(zod.string()).optional(),
+  icpPersonas: zod.array(zod.string()).optional(),
+  icpPainPoints: zod.array(zod.string()).optional(),
+  icpDifferentiators: zod.array(zod.string()).optional(),
+  icpProofPoints: zod.array(zod.string()).optional(),
+  icpCompanySize: zod.string().optional(),
 });
 
 /**
@@ -50,6 +62,12 @@ export const GetPlaybookResponse = zod.object({
   description: zod.string(),
   qualityScore: zod.number().nullish(),
   emailCount: zod.number(),
+  icpVerticals: zod.array(zod.string()),
+  icpPersonas: zod.array(zod.string()),
+  icpPainPoints: zod.array(zod.string()),
+  icpDifferentiators: zod.array(zod.string()),
+  icpProofPoints: zod.array(zod.string()),
+  icpCompanySize: zod.string().nullish(),
   createdAt: zod.coerce.date(),
   updatedAt: zod.coerce.date(),
   patterns: zod.array(
@@ -104,6 +122,9 @@ export const ListGenerationsResponseItem = zod.object({
   role: zod.string().nullish(),
   output: zod.string(),
   playbookId: zod.number().nullish(),
+  outcome: zod.string().nullish(),
+  outcomeNotes: zod.string().nullish(),
+  outcomeAt: zod.coerce.date().nullish(),
   createdAt: zod.coerce.date(),
 });
 export const ListGenerationsResponse = zod.array(ListGenerationsResponseItem);
@@ -112,8 +133,10 @@ export const ListGenerationsResponse = zod.array(ListGenerationsResponseItem);
  * @summary Generate a sales email using playbook patterns
  */
 export const GenerateEmailBody = zod.object({
+  name: zod.string(),
   company: zod.string(),
   role: zod.string(),
+  productType: zod.string(),
   problemHypothesis: zod.string(),
   recentHook: zod.string(),
   context: zod.string(),
@@ -174,6 +197,9 @@ export const GetRecentGenerationsResponseItem = zod.object({
   role: zod.string().nullish(),
   output: zod.string(),
   playbookId: zod.number().nullish(),
+  outcome: zod.string().nullish(),
+  outcomeNotes: zod.string().nullish(),
+  outcomeAt: zod.coerce.date().nullish(),
   createdAt: zod.coerce.date(),
 });
 export const GetRecentGenerationsResponse = zod.array(

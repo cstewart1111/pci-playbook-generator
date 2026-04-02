@@ -1,11 +1,11 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useSearch } from "wouter";
-import { useListPlaybooks } from "@workspace/api-client-react";
+import { useListPlaybooks, useGenerateScript } from "@workspace/api-client-react";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Select,
   SelectContent,
@@ -17,30 +17,9 @@ import { Label } from "@/components/ui/label";
 import { OutputBox } from "@/components/output-box";
 import { useToast } from "@/hooks/use-toast";
 import { getApiBaseUrl } from "@/lib/api-base";
-import {
-  Loader2,
-  Search,
-  Building2,
-  User,
-  StickyNote,
-  ChevronDown,
-  ChevronUp,
-} from "lucide-react";
+import { Loader2 } from "lucide-react";
 
-type SourceMode = "hubspot-contact" | "hubspot-company" | "manual";
-
-interface HubSpotResult {
-  id: string;
-  properties: Record<string, string | null>;
-}
-
-interface NoteResult {
-  id: string;
-  properties: {
-    hs_note_body?: string | null;
-    hs_timestamp?: string | null;
-  };
-}
+type ScriptMode = "single" | "variations";
 
 const STAGE_LABELS = [
   "Cold Outreach",
@@ -50,153 +29,137 @@ const STAGE_LABELS = [
   "Re-engagement / Stalled Deal",
 ];
 
+const JOB_TITLES = [
+  // Higher Ed / Nonprofit
+  "President / CEO",
+  "Executive Director",
+  "VP of Advancement",
+  "Director of Advancement",
+  "VP of Development",
+  "Director of Development",
+  "VP of Alumni Relations",
+  "Director of Alumni Relations",
+  "VP of Marketing",
+  "Director of Marketing",
+  "Director of Communications",
+  "VP of Enrollment",
+  "Director of Enrollment",
+  "Director of Operations",
+  // Military / VFW / American Legion
+  "Post Commander",
+  "State Commander",
+  "Department Commander",
+  "Post Adjutant",
+  "State Adjutant",
+  "Department Adjutant",
+  "Post Quartermaster",
+  "Department Quartermaster",
+  "Service Officer",
+  "Membership Chair",
+  "Department Membership Director",
+  "Auxiliary President",
+  "District Commander",
+  "National Officer",
+  "Post Chaplain",
+  // General
+  "Other",
+];
+
+const PRODUCT_TYPES = [
+  "Pipeline Discovery",
+  "Oral History",
+  "Census & Directory",
+  "Storycause/DXO",
+];
+
+const SCRIPT_TYPES = [
+  { value: "cold_call", label: "Cold Call (First Touch)" },
+  { value: "warm_call", label: "Warm Call (Replied / Opened)" },
+  { value: "follow_up", label: "Follow-Up (After Voicemail / Email)" },
+  { value: "gatekeeper", label: "Gatekeeper / Front Desk" },
+  { value: "voicemail", label: "Voicemail Drop" },
+  { value: "referral", label: "Referral / Intro Call" },
+  { value: "event_follow_up", label: "Event / Conference Follow-Up" },
+  { value: "re_engagement", label: "Re-engagement (Went Dark)" },
+  { value: "set_meeting", label: "Set the Meeting (Book Zoom / Onsite)" },
+];
+
 export default function ScriptBuilder() {
   const { toast } = useToast();
   const { data: playbooks } = useListPlaybooks();
 
-  // Source mode
-  const [sourceMode, setSourceMode] = useState<SourceMode>("hubspot-contact");
+  // Script mode
+  const [scriptMode, setScriptMode] = useState<ScriptMode>("variations");
 
-  // HubSpot search
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<HubSpotResult[]>([]);
-  const [searching, setSearching] = useState(false);
-  const [selectedRecord, setSelectedRecord] = useState<HubSpotResult | null>(null);
-
-  // Notes from HubSpot
-  const [notes, setNotes] = useState<string[]>([]);
-  const [loadingNotes, setLoadingNotes] = useState(false);
-
-  // Manual entry
-  const [manualName, setManualName] = useState("");
-  const [manualCompany, setManualCompany] = useState("");
-  const [manualRole, setManualRole] = useState("");
-  const [manualNotes, setManualNotes] = useState("");
-
-  // Shared fields
-  const [additionalContext, setAdditionalContext] = useState("");
+  // Form fields
+  const [contactName, setContactName] = useState("");
+  const [company, setCompany] = useState("");
+  const [jobTitle, setJobTitle] = useState("");
+  const [productType, setProductType] = useState("");
+  const [scriptType, setScriptType] = useState("cold_call");
   const [playbookId, setPlaybookId] = useState("");
+
+  // Single script fields
+  const [objective, setObjective] = useState("");
+
+  // Shared
+  const [additionalContext, setAdditionalContext] = useState("");
+  const [notes, setNotes] = useState("");
 
   // Output
   const [output, setOutput] = useState<string | null>(null);
+  const [generationId, setGenerationId] = useState<number | null>(null);
   const [generating, setGenerating] = useState(false);
   const [activeVariation, setActiveVariation] = useState(0);
-
-  // Notes visibility
-  const [showNotes, setShowNotes] = useState(false);
 
   const apiBase = getApiBaseUrl();
   const searchString = useSearch();
 
+  // Single script generation via the typed hook
+  const generateSingleScript = useGenerateScript({
+    mutation: {
+      onSuccess: (data) => {
+        setOutput(data.output);
+        setGenerationId(data.generationId);
+        setGenerating(false);
+      },
+      onError: () => {
+        toast({ title: "Generation failed", description: "Please try again.", variant: "destructive" });
+        setGenerating(false);
+      },
+    },
+  });
+
   // Auto-load from query params (when navigating from company/contact detail)
   useEffect(() => {
     const params = new URLSearchParams(searchString);
-    const type = params.get("type");
     const name = params.get("name");
-    const company = params.get("company");
+    const companyParam = params.get("company");
     const role = params.get("role");
     const notesParam = params.get("notes");
 
-    if (!type && !name && !company) return;
+    if (!name && !companyParam) return;
 
-    if (type === "contact" || type === "company") {
-      setSourceMode("manual");
-      if (name) setManualName(name);
-      if (company) setManualCompany(company);
-      if (role) setManualRole(role);
-      if (notesParam) {
-        try {
-          const parsed = JSON.parse(notesParam);
-          if (Array.isArray(parsed)) {
-            setManualNotes(parsed.join("\n---\n"));
-          }
-        } catch {
-          // ignore parse errors
+    if (name) setContactName(name);
+    if (companyParam) setCompany(companyParam);
+    if (role) setJobTitle(role);
+    if (notesParam) {
+      try {
+        const parsed = JSON.parse(notesParam);
+        if (Array.isArray(parsed)) {
+          setNotes(parsed.join("\n---\n"));
         }
+      } catch {
+        // ignore parse errors
       }
     }
   }, [searchString]);
 
-  const searchHubSpot = useCallback(async () => {
-    if (!searchQuery.trim()) return;
-    setSearching(true);
-    setSearchResults([]);
-    try {
-      const type = sourceMode === "hubspot-contact" ? "contacts" : "companies";
-      const resp = await fetch(
-        `${apiBase}/hubspot/${type}?search=${encodeURIComponent(searchQuery)}&limit=10`
-      );
-      const data = await resp.json();
-      setSearchResults(data.results ?? []);
-    } catch {
-      toast({ title: "Search failed", variant: "destructive" });
-    } finally {
-      setSearching(false);
-    }
-  }, [searchQuery, sourceMode, apiBase, toast]);
-
-  const selectRecord = useCallback(
-    async (record: HubSpotResult) => {
-      setSelectedRecord(record);
-      setSearchResults([]);
-      setSearchQuery("");
-      setLoadingNotes(true);
-      setNotes([]);
-
-      try {
-        const type = sourceMode === "hubspot-contact" ? "contacts" : "companies";
-        const notesResp = await fetch(`${apiBase}/hubspot/${type}/${record.id}/notes`);
-        const notesData = await notesResp.json();
-        const noteTexts: string[] = (notesData.results ?? [])
-          .map((n: NoteResult) => n.properties.hs_note_body)
-          .filter(Boolean) as string[];
-        setNotes(noteTexts);
-        if (noteTexts.length > 0) setShowNotes(true);
-      } catch {
-        // Notes are optional, don't block
-      } finally {
-        setLoadingNotes(false);
-      }
-    },
-    [sourceMode, apiBase]
-  );
-
-  const getSelectedName = (): string => {
-    if (!selectedRecord) return "";
-    const p = selectedRecord.properties;
-    if (sourceMode === "hubspot-contact") {
-      return [p.firstname, p.lastname].filter(Boolean).join(" ");
-    }
-    return p.name ?? "";
-  };
-
-  const getSelectedCompany = (): string => {
-    if (!selectedRecord) return "";
-    const p = selectedRecord.properties;
-    if (sourceMode === "hubspot-company") return p.name ?? "";
-    return p.company ?? "";
-  };
-
-  const getSelectedRole = (): string => {
-    if (!selectedRecord) return "";
-    return selectedRecord.properties.jobtitle ?? "";
-  };
-
   const handleGenerate = async () => {
-    const isManual = sourceMode === "manual";
-    const name = isManual ? manualName : getSelectedName();
-    const company = isManual ? manualCompany : getSelectedCompany();
-    const role = isManual ? manualRole : getSelectedRole();
-    const allNotes = isManual
-      ? manualNotes.trim()
-        ? [manualNotes.trim()]
-        : []
-      : notes;
-
-    if (!name && !company) {
+    if (!contactName && !company) {
       toast({
         title: "Missing info",
-        description: "Please provide a name or company.",
+        description: "Please provide a contact name or company.",
         variant: "destructive",
       });
       return;
@@ -204,30 +167,56 @@ export default function ScriptBuilder() {
 
     setGenerating(true);
     setOutput(null);
+    setGenerationId(null);
     setActiveVariation(0);
 
-    try {
-      const resp = await fetch(`${apiBase}/generations/script-builder`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name,
-          company,
-          role,
-          notes: allNotes,
-          context: additionalContext || undefined,
-          playbookId:
-            playbookId && playbookId !== "none" ? Number(playbookId) : undefined,
-        }),
+    const selectedProduct = productType && productType !== "none" ? productType : "";
+    const selectedScript = SCRIPT_TYPES.find(s => s.value === scriptType)?.label ?? scriptType;
+    const resolvedPlaybookId = playbookId && playbookId !== "none" ? Number(playbookId) : null;
+
+    if (scriptMode === "single") {
+      const contextParts: string[] = [];
+      if (contactName) contextParts.push(`Contact: ${contactName}`);
+      if (company) contextParts.push(`Company: ${company}`);
+      if (jobTitle && jobTitle !== "none") contextParts.push(`Job Title: ${jobTitle}`);
+      if (selectedProduct) contextParts.push(`Product Type: ${selectedProduct}`);
+      contextParts.push(`Script Type: ${selectedScript}`);
+      if (notes.trim()) contextParts.push(`Notes: ${notes.trim()}`);
+      if (additionalContext.trim()) contextParts.push(additionalContext.trim());
+
+      generateSingleScript.mutate({
+        data: {
+          objective: objective || `${selectedScript} with ${contactName || company}`,
+          context: contextParts.join(". "),
+          playbookId: resolvedPlaybookId,
+        },
       });
-      const data = await resp.json();
-      if (!resp.ok) throw new Error(data.error || "Generation failed");
-      setOutput(data.output);
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Please try again.";
-      toast({ title: "Generation failed", description: message, variant: "destructive" });
-    } finally {
-      setGenerating(false);
+    } else {
+      try {
+        const resp = await fetch(`${apiBase}/generations/script-builder`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: contactName,
+            company,
+            role: jobTitle && jobTitle !== "none" ? jobTitle : "",
+            productType: selectedProduct,
+            scriptType: selectedScript,
+            notes: notes.trim() ? [notes.trim()] : [],
+            context: additionalContext || undefined,
+            playbookId: resolvedPlaybookId ?? undefined,
+          }),
+        });
+        const data = await resp.json();
+        if (!resp.ok) throw new Error(data.error || "Generation failed");
+        setOutput(data.output);
+        setGenerationId(data.generationId ?? null);
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : "Please try again.";
+        toast({ title: "Generation failed", description: message, variant: "destructive" });
+      } finally {
+        setGenerating(false);
+      }
     }
   };
 
@@ -235,7 +224,6 @@ export default function ScriptBuilder() {
   const parseVariations = (text: string): string[] => {
     const parts = text.split(/===\s*VARIATION\s+\d+[^=]*===/).filter((s) => s.trim());
     if (parts.length >= 5) return parts.slice(0, 5);
-    // Fallback: return the whole text as one block
     return [text];
   };
 
@@ -245,299 +233,175 @@ export default function ScriptBuilder() {
     <div>
       <PageHeader
         title="Script Builder"
-        description="Pull a contact or company from HubSpot, load their notes, and generate 5 call script variations for different deal stages"
+        description="Generate personalized call scripts trained on your playbook and knowledge base"
       />
 
-      <div className="p-6 space-y-5 max-w-4xl">
-        {/* Source Selection */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-semibold">Data Source</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex gap-2">
-              <Button
-                variant={sourceMode === "hubspot-contact" ? "default" : "outline"}
-                size="sm"
-                onClick={() => {
-                  setSourceMode("hubspot-contact");
-                  setSelectedRecord(null);
-                  setNotes([]);
-                  setSearchResults([]);
-                }}
-              >
-                <User className="w-4 h-4 mr-1.5" />
-                HubSpot Contact
-              </Button>
-              <Button
-                variant={sourceMode === "hubspot-company" ? "default" : "outline"}
-                size="sm"
-                onClick={() => {
-                  setSourceMode("hubspot-company");
-                  setSelectedRecord(null);
-                  setNotes([]);
-                  setSearchResults([]);
-                }}
-              >
-                <Building2 className="w-4 h-4 mr-1.5" />
-                HubSpot Company
-              </Button>
-              <Button
-                variant={sourceMode === "manual" ? "default" : "outline"}
-                size="sm"
-                onClick={() => {
-                  setSourceMode("manual");
-                  setSelectedRecord(null);
-                  setNotes([]);
-                  setSearchResults([]);
-                }}
-              >
-                Manual Entry
-              </Button>
-            </div>
+      <div className="p-6 space-y-5 max-w-3xl">
+        {/* Script Mode Toggle */}
+        <div className="flex gap-2">
+          <Button
+            variant={scriptMode === "single" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setScriptMode("single")}
+          >
+            Quick Script
+          </Button>
+          <Button
+            variant={scriptMode === "variations" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setScriptMode("variations")}
+          >
+            Full Playbook (5 Variations)
+          </Button>
+        </div>
 
-            {/* HubSpot Search */}
-            {sourceMode !== "manual" && (
-              <div className="space-y-3">
-                <div className="flex gap-2">
-                  <Input
-                    placeholder={
-                      sourceMode === "hubspot-contact"
-                        ? "Search contacts by name..."
-                        : "Search companies by name..."
-                    }
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && searchHubSpot()}
-                  />
-                  <Button
-                    onClick={searchHubSpot}
-                    disabled={searching || !searchQuery.trim()}
-                    size="sm"
-                    className="shrink-0"
-                  >
-                    {searching ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <Search className="w-4 h-4" />
-                    )}
-                  </Button>
-                </div>
-
-                {/* Search Results */}
-                {searchResults.length > 0 && (
-                  <div className="border rounded-md divide-y max-h-48 overflow-y-auto">
-                    {searchResults.map((r) => (
-                      <button
-                        key={r.id}
-                        onClick={() => selectRecord(r)}
-                        className="w-full text-left px-3 py-2 hover:bg-accent/50 transition-colors text-sm"
-                      >
-                        {sourceMode === "hubspot-contact" ? (
-                          <div>
-                            <span className="font-medium">
-                              {[r.properties.firstname, r.properties.lastname]
-                                .filter(Boolean)
-                                .join(" ") || "Unknown"}
-                            </span>
-                            {r.properties.jobtitle && (
-                              <span className="text-muted-foreground ml-2">
-                                {r.properties.jobtitle}
-                              </span>
-                            )}
-                            {r.properties.company && (
-                              <span className="text-muted-foreground ml-2">
-                                at {r.properties.company}
-                              </span>
-                            )}
-                          </div>
-                        ) : (
-                          <div>
-                            <span className="font-medium">
-                              {r.properties.name ?? "Unknown"}
-                            </span>
-                            {r.properties.industry && (
-                              <span className="text-muted-foreground ml-2">
-                                {r.properties.industry}
-                              </span>
-                            )}
-                            {r.properties.domain && (
-                              <span className="text-muted-foreground ml-2">
-                                ({r.properties.domain})
-                              </span>
-                            )}
-                          </div>
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                )}
-
-                {/* Selected Record */}
-                {selectedRecord && (
-                  <div className="bg-accent/30 rounded-md p-3 space-y-1">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        {sourceMode === "hubspot-contact" ? (
-                          <User className="w-4 h-4 text-primary" />
-                        ) : (
-                          <Building2 className="w-4 h-4 text-primary" />
-                        )}
-                        <span className="font-medium text-sm">
-                          {getSelectedName() || getSelectedCompany()}
-                        </span>
-                        {getSelectedRole() && (
-                          <span className="text-muted-foreground text-sm">
-                            - {getSelectedRole()}
-                          </span>
-                        )}
-                        {sourceMode === "hubspot-contact" && getSelectedCompany() && (
-                          <span className="text-muted-foreground text-sm">
-                            at {getSelectedCompany()}
-                          </span>
-                        )}
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          setSelectedRecord(null);
-                          setNotes([]);
-                        }}
-                        className="h-7 text-xs"
-                      >
-                        Clear
-                      </Button>
-                    </div>
-
-                    {/* Notes Section */}
-                    {loadingNotes && (
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground pt-1">
-                        <Loader2 className="w-3 h-3 animate-spin" />
-                        Loading notes...
-                      </div>
-                    )}
-                    {!loadingNotes && notes.length > 0 && (
-                      <div className="pt-1">
-                        <button
-                          onClick={() => setShowNotes(!showNotes)}
-                          className="flex items-center gap-1 text-xs font-medium text-primary hover:underline"
-                        >
-                          <StickyNote className="w-3 h-3" />
-                          {notes.length} note{notes.length !== 1 ? "s" : ""} found
-                          {showNotes ? (
-                            <ChevronUp className="w-3 h-3" />
-                          ) : (
-                            <ChevronDown className="w-3 h-3" />
-                          )}
-                        </button>
-                        {showNotes && (
-                          <div className="mt-2 space-y-2 max-h-40 overflow-y-auto">
-                            {notes.map((note, i) => (
-                              <div
-                                key={i}
-                                className="text-xs text-muted-foreground bg-background rounded p-2 border"
-                              >
-                                {note.length > 300 ? note.slice(0, 300) + "..." : note}
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                    {!loadingNotes && notes.length === 0 && (
-                      <p className="text-xs text-muted-foreground pt-1">
-                        No notes found for this record.
-                      </p>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Manual Entry */}
-            {sourceMode === "manual" && (
-              <div className="space-y-3">
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <Label className="text-xs">Name</Label>
-                    <Input
-                      placeholder="Contact name"
-                      value={manualName}
-                      onChange={(e) => setManualName(e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-xs">Company</Label>
-                    <Input
-                      placeholder="Company name"
-                      value={manualCompany}
-                      onChange={(e) => setManualCompany(e.target.value)}
-                    />
-                  </div>
-                </div>
-                <div>
-                  <Label className="text-xs">Role / Title</Label>
-                  <Input
-                    placeholder="e.g. VP of Engineering"
-                    value={manualRole}
-                    onChange={(e) => setManualRole(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <Label className="text-xs">Notes</Label>
-                  <Textarea
-                    placeholder="Paste any notes, call summaries, or background info..."
-                    rows={4}
-                    value={manualNotes}
-                    onChange={(e) => setManualNotes(e.target.value)}
-                  />
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Additional Context & Playbook */}
+        {/* Main Form */}
         <Card>
           <CardContent className="p-4 space-y-4">
-            <div>
-              <Label className="text-xs">Additional Context (optional)</Label>
+            {/* Row 1: Contact Name + Company */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label className="text-sm text-muted-foreground">Contact Name</Label>
+                <Input
+                  placeholder="e.g. John Smith"
+                  value={contactName}
+                  onChange={(e) => setContactName(e.target.value)}
+                  data-testid="input-contact-name"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-sm text-muted-foreground">Company</Label>
+                <Input
+                  placeholder="e.g. University of Texas"
+                  value={company}
+                  onChange={(e) => setCompany(e.target.value)}
+                  data-testid="input-company"
+                />
+              </div>
+            </div>
+
+            {/* Row 2: Job Title + Script Type */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label className="text-sm text-muted-foreground">Job Title</Label>
+                <Select value={jobTitle} onValueChange={setJobTitle}>
+                  <SelectTrigger data-testid="select-job-title">
+                    <SelectValue placeholder="Select job title..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Not specified</SelectItem>
+                    {JOB_TITLES.map((jt) => (
+                      <SelectItem key={jt} value={jt}>
+                        {jt}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-sm text-muted-foreground">Script Type</Label>
+                <Select value={scriptType} onValueChange={setScriptType}>
+                  <SelectTrigger data-testid="select-script-type">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SCRIPT_TYPES.map((st) => (
+                      <SelectItem key={st.value} value={st.value}>
+                        {st.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Row 3: Product Type + Playbook */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label className="text-sm text-muted-foreground">Product Type</Label>
+                <Select value={productType} onValueChange={setProductType}>
+                  <SelectTrigger data-testid="select-product-type">
+                    <SelectValue placeholder="Select a product..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Not specified</SelectItem>
+                    {PRODUCT_TYPES.map((pt) => (
+                      <SelectItem key={pt} value={pt}>
+                        {pt}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-sm text-muted-foreground">Playbook</Label>
+                <Select value={playbookId} onValueChange={setPlaybookId}>
+                  <SelectTrigger data-testid="select-playbook">
+                    <SelectValue placeholder="No playbook" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No playbook</SelectItem>
+                    {playbooks?.map((pb) => (
+                      <SelectItem key={pb.id} value={String(pb.id)}>
+                        {pb.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Objective (quick script only) */}
+            {scriptMode === "single" && (
+              <div className="space-y-1.5">
+                <Label className="text-sm">Call Objective</Label>
+                <Textarea
+                  placeholder="e.g. Book a discovery call to understand their alumni engagement challenges"
+                  rows={2}
+                  value={objective}
+                  onChange={(e) => setObjective(e.target.value)}
+                  data-testid="input-objective"
+                />
+              </div>
+            )}
+
+            {/* Notes */}
+            <div className="space-y-1.5">
+              <Label className="text-sm text-muted-foreground">Notes <span className="text-xs">(optional)</span></Label>
               <Textarea
-                placeholder="Any extra context: recent trigger events, specific goals, industry trends..."
+                placeholder="Paste any call notes, meeting summaries, or background info about the prospect..."
                 rows={3}
-                value={additionalContext}
-                onChange={(e) => setAdditionalContext(e.target.value)}
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                data-testid="input-notes"
               />
             </div>
 
-            <div>
-              <Label className="text-xs">Playbook (optional)</Label>
-              <Select value={playbookId} onValueChange={setPlaybookId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Use no playbook" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">No playbook</SelectItem>
-                  {playbooks?.map((pb) => (
-                    <SelectItem key={pb.id} value={String(pb.id)}>
-                      {pb.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            {/* Additional Context */}
+            <div className="space-y-1.5">
+              <Label className="text-sm text-muted-foreground">Additional Context <span className="text-xs">(optional)</span></Label>
+              <Textarea
+                placeholder="Trigger events, specific goals, industry trends, anything else to shape the script..."
+                rows={2}
+                value={additionalContext}
+                onChange={(e) => setAdditionalContext(e.target.value)}
+                data-testid="input-context"
+              />
             </div>
 
             <Button
               onClick={handleGenerate}
-              disabled={generating}
+              disabled={generating || generateSingleScript.isPending}
               className="w-full"
+              data-testid="button-generate-script"
             >
-              {generating ? (
+              {generating || generateSingleScript.isPending ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Generating 5 Script Variations...
+                  {scriptMode === "single" ? "Generating Script..." : "Generating 5 Script Variations..."}
                 </>
+              ) : scriptMode === "single" ? (
+                "Generate Script"
               ) : (
                 "Generate 5 Script Variations"
               )}
@@ -546,7 +410,7 @@ export default function ScriptBuilder() {
         </Card>
 
         {/* Output: Tabbed Variations */}
-        {output && variations.length > 1 && (
+        {output && scriptMode === "variations" && variations.length > 1 && (
           <div className="space-y-3">
             <div className="flex gap-1 flex-wrap">
               {STAGE_LABELS.map((label, i) => (
@@ -564,13 +428,19 @@ export default function ScriptBuilder() {
             <OutputBox
               content={variations[activeVariation]?.trim() ?? ""}
               label={`Script - ${STAGE_LABELS[activeVariation]}`}
+              generationId={generationId ?? undefined}
             />
           </div>
         )}
 
-        {/* Fallback: single output if parsing failed */}
-        {output && variations.length === 1 && (
-          <OutputBox content={output} label="Generated Scripts" />
+        {/* Single script output or fallback */}
+        {output && (scriptMode === "single" || variations.length === 1) && !(scriptMode === "variations" && variations.length > 1) && (
+          <OutputBox
+            content={output}
+            label="Generated Script"
+            generationId={generationId ?? undefined}
+            data-testid="section-script-output"
+          />
         )}
       </div>
     </div>

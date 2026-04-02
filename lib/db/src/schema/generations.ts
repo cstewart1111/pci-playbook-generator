@@ -12,6 +12,9 @@ export const generations = pgTable("generations", {
   playbookId: integer("playbook_id").references(() => playbooks.id, {
     onDelete: "set null",
   }),
+  outcome: text("outcome"),
+  outcomeNotes: text("outcome_notes"),
+  outcomeAt: timestamp("outcome_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 

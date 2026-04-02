@@ -6,9 +6,8 @@ import { Layout } from "@/components/layout";
 import Dashboard from "@/pages/dashboard";
 import Playbooks from "@/pages/playbooks";
 import PlaybookDetail from "@/pages/playbook-detail";
-import Import from "@/pages/import";
+import IntelHub from "@/pages/intel-hub";
 import GenerateEmail from "@/pages/generate-email";
-import GenerateScript from "@/pages/generate-script";
 import ScriptBuilder from "@/pages/script-builder";
 import SuggestEdits from "@/pages/suggest-edits";
 import HubSpotCompanies from "@/pages/hubspot-companies";
@@ -26,9 +25,11 @@ function Router() {
         <Route path="/" component={Dashboard} />
         <Route path="/playbooks" component={Playbooks} />
         <Route path="/playbooks/:id" component={PlaybookDetail} />
-        <Route path="/import" component={Import} />
+        <Route path="/intel-hub" component={IntelHub} />
+        <Route path="/knowledge-base" component={IntelHub} />
+        <Route path="/import" component={IntelHub} />
         <Route path="/generate-email" component={GenerateEmail} />
-        <Route path="/generate-script" component={GenerateScript} />
+        <Route path="/generate-script" component={ScriptBuilder} />
         <Route path="/script-builder" component={ScriptBuilder} />
         <Route path="/suggest-edits" component={SuggestEdits} />
         <Route path="/hubspot/companies" component={HubSpotCompanies} />

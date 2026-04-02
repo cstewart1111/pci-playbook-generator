@@ -38,6 +38,7 @@ type FormValues = z.infer<typeof schema>;
 
 export default function SuggestEdits() {
   const [output, setOutput] = useState<string | null>(null);
+  const [generationId, setGenerationId] = useState<number | null>(null);
   const { toast } = useToast();
   const { data: playbooks } = useListPlaybooks();
 
@@ -53,6 +54,7 @@ export default function SuggestEdits() {
     mutation: {
       onSuccess: (data) => {
         setOutput(data.output);
+        setGenerationId(data.generationId);
       },
       onError: () => {
         toast({ title: "Analysis failed", description: "Please try again.", variant: "destructive" });
@@ -62,6 +64,7 @@ export default function SuggestEdits() {
 
   const onSubmit = (values: FormValues) => {
     setOutput(null);
+    setGenerationId(null);
     suggestEdits.mutate({
       data: {
         draftEmail: values.draftEmail,
@@ -73,8 +76,8 @@ export default function SuggestEdits() {
   return (
     <div>
       <PageHeader
-        title="Edit Suggestions"
-        description="Get AI-powered feedback on your draft email based on winning patterns"
+        title="Edit Coach"
+        description="Paste a draft email and get AI-powered feedback to sharpen your message"
       />
 
       <div className="p-6 space-y-5 max-w-3xl">
@@ -152,6 +155,7 @@ export default function SuggestEdits() {
           <OutputBox
             content={output}
             label="Edit Suggestions"
+            generationId={generationId ?? undefined}
             data-testid="section-edits-output"
           />
         )}

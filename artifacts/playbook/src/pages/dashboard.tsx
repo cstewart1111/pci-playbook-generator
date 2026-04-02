@@ -4,7 +4,7 @@ import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { BookOpen, Mail, FileText, Pen, TrendingUp, Import } from "lucide-react";
+import { BookOpen, Mail, FileText, Pen, TrendingUp, Brain } from "lucide-react";
 import { Link } from "wouter";
 import { formatDistanceToNow } from "date-fns";
 
@@ -103,7 +103,7 @@ export default function Dashboard() {
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
           <StatCard label="Playbooks" value={stats?.totalPlaybooks} icon={BookOpen} isLoading={statsLoading} />
           <StatCard label="Total Generations" value={stats?.totalGenerations} icon={TrendingUp} isLoading={statsLoading} />
-          <StatCard label="Emails Analyzed" value={stats?.totalEmailsAnalyzed} icon={Import} isLoading={statsLoading} />
+          <StatCard label="Emails Analyzed" value={stats?.totalEmailsAnalyzed} icon={Brain} isLoading={statsLoading} />
           <StatCard label="Emails Generated" value={stats?.emailsGenerated} icon={Mail} isLoading={statsLoading} />
           <StatCard label="Scripts Generated" value={stats?.scriptsGenerated} icon={FileText} isLoading={statsLoading} />
           <StatCard label="Edit Requests" value={stats?.editsRequested} icon={Pen} isLoading={statsLoading} />
@@ -193,12 +193,12 @@ export default function Dashboard() {
           <CardContent className="px-4 pb-4">
             <div className="grid grid-cols-2 gap-2">
               <Link
-                href="/import"
+                href="/intel-hub?tab=analyze"
                 data-testid="link-quick-import"
                 className="flex items-center gap-2 p-3 border border-border rounded-sm hover:bg-muted/50 transition-colors"
               >
-                <Import className="w-4 h-4 text-primary shrink-0" />
-                <span className="text-sm font-medium">Import Emails</span>
+                <Brain className="w-4 h-4 text-primary shrink-0" />
+                <span className="text-sm font-medium">Knowledge Base</span>
               </Link>
               <Link
                 href="/generate-email"
@@ -206,15 +206,15 @@ export default function Dashboard() {
                 className="flex items-center gap-2 p-3 border border-border rounded-sm hover:bg-muted/50 transition-colors"
               >
                 <Mail className="w-4 h-4 text-primary shrink-0" />
-                <span className="text-sm font-medium">Generate Email</span>
+                <span className="text-sm font-medium">Email Writer</span>
               </Link>
               <Link
-                href="/generate-script"
+                href="/script-builder"
                 data-testid="link-quick-generate-script"
                 className="flex items-center gap-2 p-3 border border-border rounded-sm hover:bg-muted/50 transition-colors"
               >
                 <FileText className="w-4 h-4 text-primary shrink-0" />
-                <span className="text-sm font-medium">Generate Script</span>
+                <span className="text-sm font-medium">Script Builder</span>
               </Link>
               <Link
                 href="/suggest-edits"
@@ -222,7 +222,7 @@ export default function Dashboard() {
                 className="flex items-center gap-2 p-3 border border-border rounded-sm hover:bg-muted/50 transition-colors"
               >
                 <Pen className="w-4 h-4 text-primary shrink-0" />
-                <span className="text-sm font-medium">Suggest Edits</span>
+                <span className="text-sm font-medium">Edit Coach</span>
               </Link>
             </div>
           </CardContent>

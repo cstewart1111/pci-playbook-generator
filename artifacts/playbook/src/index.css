@@ -66,7 +66,7 @@
   --radius-xl: calc(var(--radius) + 4px);
 }
 
-/* LIGHT MODE - High density, crisp, bold international orange accent */
+/* LIGHT MODE - High density, crisp, bold red accent */
 :root {
   --button-outline: rgba(0,0,0, .10);
   --badge-outline: rgba(0,0,0, .05);
@@ -90,18 +90,18 @@
   --sidebar: 224 20% 12%;
   --sidebar-foreground: 0 0% 98%;
   --sidebar-border: 224 20% 8%;
-  --sidebar-primary: 16 100% 55%;
+  --sidebar-primary: 0 85% 50%;
   --sidebar-primary-foreground: 0 0% 100%;
   --sidebar-accent: 224 20% 18%;
   --sidebar-accent-foreground: 0 0% 98%;
-  --sidebar-ring: 16 100% 55%;
+  --sidebar-ring: 0 85% 50%;
 
   --popover: 0 0% 100%;
   --popover-foreground: 220 10% 10%;
   --popover-border: 220 15% 90%;
 
-  /* International Orange */
-  --primary: 16 100% 55%;
+  /* PCI Red */
+  --primary: 0 85% 50%;
   --primary-foreground: 0 0% 100%;
 
   --secondary: 220 15% 96%;
@@ -117,9 +117,9 @@
   --destructive-foreground: 0 0% 100%;
 
   --input: 220 15% 85%;
-  --ring: 16 100% 55%;
-  
-  --chart-1: 16 100% 55%;
+  --ring: 0 85% 50%;
+
+  --chart-1: 0 85% 50%;
   --chart-2: 220 80% 50%;
   --chart-3: 160 60% 45%;
   --chart-4: 40 90% 55%;
@@ -166,17 +166,17 @@
   --sidebar: 224 20% 10%;
   --sidebar-foreground: 0 0% 98%;
   --sidebar-border: 224 20% 18%;
-  --sidebar-primary: 16 100% 55%;
+  --sidebar-primary: 0 85% 50%;
   --sidebar-primary-foreground: 0 0% 100%;
   --sidebar-accent: 224 20% 18%;
   --sidebar-accent-foreground: 0 0% 98%;
-  --sidebar-ring: 16 100% 55%;
+  --sidebar-ring: 0 85% 50%;
 
   --popover: 224 20% 10%;
   --popover-foreground: 0 0% 98%;
   --popover-border: 224 20% 18%;
 
-  --primary: 16 100% 55%;
+  --primary: 0 85% 50%;
   --primary-foreground: 0 0% 100%;
 
   --secondary: 224 20% 18%;
@@ -192,9 +192,9 @@
   --destructive-foreground: 0 0% 100%;
 
   --input: 224 20% 25%;
-  --ring: 16 100% 55%;
-  
-  --chart-1: 16 100% 55%;
+  --ring: 0 85% 50%;
+
+  --chart-1: 0 85% 50%;
   --chart-2: 220 80% 60%;
   --chart-3: 160 60% 50%;
   --chart-4: 40 90% 60%;

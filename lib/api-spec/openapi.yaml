@@ -428,9 +428,13 @@ components:
     GenerateEmailBody:
       type: object
       properties:
+        name:
+          type: string
         company:
           type: string
         role:
+          type: string
+        productType:
           type: string
         problemHypothesis:
           type: string
@@ -442,8 +446,10 @@ components:
           type: integer
           nullable: true
       required:
+        - name
         - company
         - role
+        - productType
         - problemHypothesis
         - recentHook
         - context
