@@ -1,14 +1,23 @@
 {
   "version": 2,
-  "buildCommand": "pnpm --filter @workspace/api-server run build && pnpm --filter @workspace/playbook run build",
-  "outputDirectory": "artifacts/playbook/dist/public",
-  "functions": {
-    "api/index.mjs": {
-      "maxDuration": 30
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "artifacts/playbook/dist/public",
+        "buildCommand": "pnpm --filter @workspace/api-server run build && pnpm --filter @workspace/playbook run build"
+      }
+    },
+    {
+      "src": "api/index.mjs",
+      "use": "@vercel/node",
+      "config": { "maxDuration": 30 }
     }
-  },
-  "rewrites": [
-    { "source": "/api/:path*", "destination": "/api/index.mjs" },
-    { "source": "/:path*",     "destination": "/index.html" }
+  ],
+  "routes": [
+    { "src": "/api/(.*)", "dest": "/api/index.mjs" },
+    { "handle": "filesystem" },
+    { "src": "/(.*)", "dest": "/index.html" }
   ]
 }
