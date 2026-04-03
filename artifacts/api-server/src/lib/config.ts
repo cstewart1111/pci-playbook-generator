@@ -9,7 +9,3 @@ export const config = {
   distanceMatrixCacheTtlMs: Number(process.env.DISTANCE_MATRIX_CACHE_TTL_MS) || 24 * 60 * 60 * 1000,
 };
 
-// Ensure required keys are provided
-if (!config.googleApiKey) {
-  throw new Error("Missing required environment variable: GOOGLE_MAPS_API_KEY");
-}
