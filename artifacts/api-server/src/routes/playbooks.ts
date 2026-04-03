@@ -8,7 +8,10 @@ import {
   AnalyzeEmailsParams,
   AnalyzeEmailsBody,
 } from "@workspace/api-zod";
-import { anthropic } from "@workspace/integrations-anthropic-ai";
+import {
+  anthropic,
+  isAnthropicIntegrationUnavailableError,
+} from "@workspace/integrations-anthropic-ai";
 import { eq } from "drizzle-orm";
 
 const router: IRouter = Router();
@@ -197,6 +200,10 @@ Return only valid JSON, no markdown.`,
       qualityScore: analysis.qualityScore,
     });
   } catch (err) {
+    if (isAnthropicIntegrationUnavailableError(err)) {
+      req.log.warn({ err }, "Anthropic integration unavailable for email analysis");
+      return res.status(503).json({ error: "Claude integration is not configured" });
+    }
     req.log.error({ err }, "Failed to analyze emails");
     return res.status(500).json({ error: "Failed to analyze emails" });
   }

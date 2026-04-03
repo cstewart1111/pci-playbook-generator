@@ -6,7 +6,10 @@ import {
   GenerateScriptBody,
   SuggestEditsBody,
 } from "@workspace/api-zod";
-import { anthropic } from "@workspace/integrations-anthropic-ai";
+import {
+  anthropic,
+  isAnthropicIntegrationUnavailableError,
+} from "@workspace/integrations-anthropic-ai";
 import { eq, desc, and, isNull, isNotNull } from "drizzle-orm";
 import { getSocialProofContext, getObjectionHandlesContext, type SocialProofResult } from "./social-proof";
 
@@ -403,6 +406,11 @@ ${FORMATTING_RULES}`,
       } : null,
     });
   } catch (err) {
+    if (isAnthropicIntegrationUnavailableError(err)) {
+      req.log.warn({ err }, "Anthropic integration unavailable for email generation");
+      res.status(503).json({ error: "Claude integration is not configured" });
+      return;
+    }
     req.log.error({ err }, "Failed to generate email");
     res.status(500).json({ error: "Failed to generate email" });
   }
@@ -468,6 +476,11 @@ ${FORMATTING_RULES}`,
 
     res.json({ output: content.text, generationId: generation.id });
   } catch (err) {
+    if (isAnthropicIntegrationUnavailableError(err)) {
+      req.log.warn({ err }, "Anthropic integration unavailable for script generation");
+      res.status(503).json({ error: "Claude integration is not configured" });
+      return;
+    }
     req.log.error({ err }, "Failed to generate script");
     res.status(500).json({ error: "Failed to generate script" });
   }
@@ -660,6 +673,14 @@ ${FORMATTING_RULES}`;
       } : null,
     });
   } catch (err) {
+    if (isAnthropicIntegrationUnavailableError(err)) {
+      req.log.warn(
+        { err },
+        "Anthropic integration unavailable for script variation generation",
+      );
+      res.status(503).json({ error: "Claude integration is not configured" });
+      return;
+    }
     req.log.error({ err }, "Failed to generate script variations");
     res.status(500).json({ error: "Failed to generate script variations" });
   }
@@ -754,6 +775,11 @@ ${FORMATTING_RULES}`,
 
     res.json({ output: content.text, generationId: generation.id });
   } catch (err) {
+    if (isAnthropicIntegrationUnavailableError(err)) {
+      req.log.warn({ err }, "Anthropic integration unavailable for edit suggestions");
+      res.status(503).json({ error: "Claude integration is not configured" });
+      return;
+    }
     req.log.error({ err }, "Failed to suggest edits");
     res.status(500).json({ error: "Failed to suggest edits" });
   }

@@ -1,6 +1,9 @@
 import { Router, type IRouter } from "express";
 import { ReplitConnectors } from "@replit/connectors-sdk";
-import { anthropic } from "@workspace/integrations-anthropic-ai";
+import {
+  anthropic,
+  isAnthropicIntegrationUnavailableError,
+} from "@workspace/integrations-anthropic-ai";
 
 const router: IRouter = Router();
 
@@ -373,6 +376,11 @@ SUGGESTED OUTREACH ANGLE:
 
     res.json({ summary: content.text, companyName });
   } catch (err) {
+    if (isAnthropicIntegrationUnavailableError(err)) {
+      req.log.warn({ err }, "Anthropic integration unavailable for company summary");
+      res.status(503).json({ error: "Claude integration is not configured" });
+      return;
+    }
     req.log.error({ err }, "Failed to summarize company");
     res.status(500).json({ error: "Failed to generate account summary" });
   }
@@ -633,6 +641,11 @@ RECOMMENDED OUTREACH:
 
     res.json({ summary: content.text, contactName: fullName });
   } catch (err) {
+    if (isAnthropicIntegrationUnavailableError(err)) {
+      req.log.warn({ err }, "Anthropic integration unavailable for contact summary");
+      res.status(503).json({ error: "Claude integration is not configured" });
+      return;
+    }
     req.log.error({ err }, "Failed to summarize contact");
     res.status(500).json({ error: "Failed to generate contact summary" });
   }
@@ -832,6 +845,11 @@ ${FORMATTING_RULES}`;
       res.json({ output: content.text });
     }
   } catch (err) {
+    if (isAnthropicIntegrationUnavailableError(err)) {
+      req.log.warn({ err }, "Anthropic integration unavailable for company content generation");
+      res.status(503).json({ error: "Claude integration is not configured" });
+      return;
+    }
     req.log.error({ err }, "Failed to generate from company context");
     res.status(500).json({ error: "Failed to generate content" });
   }
@@ -943,6 +961,11 @@ ${FORMATTING_RULES}`;
       res.json({ output: content.text });
     }
   } catch (err) {
+    if (isAnthropicIntegrationUnavailableError(err)) {
+      req.log.warn({ err }, "Anthropic integration unavailable for contact content generation");
+      res.status(503).json({ error: "Claude integration is not configured" });
+      return;
+    }
     req.log.error({ err }, "Failed to generate from contact context");
     res.status(500).json({ error: "Failed to generate content" });
   }

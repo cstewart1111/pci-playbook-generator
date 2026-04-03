@@ -8,12 +8,43 @@ const missingEnvVars = [
   !apiKey ? "AI_INTEGRATIONS_ANTHROPIC_API_KEY" : null,
 ].filter(Boolean) as string[];
 
-function createUnavailableClient(message: string): Anthropic {
+export class AnthropicIntegrationUnavailableError extends Error {
+  readonly code = "ANTHROPIC_INTEGRATION_UNAVAILABLE";
+
+  constructor(missingVars: string[]) {
+    super(
+      `Anthropic AI integration is not configured (missing ${missingVars.join(
+        ", ",
+      )}). The API server can still start, but AI-powered endpoints require this integration.`,
+    );
+    this.name = "AnthropicIntegrationUnavailableError";
+  }
+}
+
+export function isAnthropicIntegrationUnavailableError(
+  error: unknown,
+): error is AnthropicIntegrationUnavailableError {
+  if (error instanceof AnthropicIntegrationUnavailableError) {
+    return true;
+  }
+
+  if (!(error instanceof Error)) {
+    return false;
+  }
+
+  const errorWithCode = error as Error & { code?: string };
+  return (
+    error.name === "AnthropicIntegrationUnavailableError" ||
+    errorWithCode.code === "ANTHROPIC_INTEGRATION_UNAVAILABLE"
+  );
+}
+
+function createUnavailableClient(missingVars: string[]): Anthropic {
   return new Proxy(
     {},
     {
       get() {
-        throw new Error(message);
+        throw new AnthropicIntegrationUnavailableError(missingVars);
       },
     },
   ) as Anthropic;
@@ -25,8 +56,4 @@ export const anthropic =
         apiKey,
         baseURL,
       })
-    : createUnavailableClient(
-        `Anthropic AI integration is not configured (missing ${missingEnvVars.join(
-          ", ",
-        )}). The API server can still start, but AI-powered endpoints require this integration.`,
-      );
+    : createUnavailableClient(missingEnvVars);
