@@ -48,3 +48,6 @@ Thumbs.db
 .cache/
 .local/
 data/pci-claude/
+
+# Vercel Build Output API (generated)
+.vercel/output
